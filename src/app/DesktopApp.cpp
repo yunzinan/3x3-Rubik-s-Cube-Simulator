@@ -96,6 +96,12 @@ DesktopApp::DesktopApp(const Arguments& arguments)
         FileIO::saveControlSequence(path, executed);
     };
 
+    ui_.onClearSequence = [this]() {
+        animManager_.reset();
+        history_.clear();
+        LOG_INFO("Sequence cleared");
+    };
+
     timeline_.start();
     setSwapInterval(1);
 }

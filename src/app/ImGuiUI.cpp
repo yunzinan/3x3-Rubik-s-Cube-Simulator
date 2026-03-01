@@ -48,6 +48,13 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
         if (onSaveFile) onSaveFile(filePathBuf_);
     }
 
+    ImGui::SameLine();
+    ImGui::BeginDisabled(isAnimating);
+    if (ImGui::Button("Clear Sequence")) {
+        if (onClearSequence) onClearSequence();
+    }
+    ImGui::EndDisabled();
+
     // --- Status ---
     ImGui::Separator();
     ImGui::Text("Moves: %d / %d", history.cursor(),

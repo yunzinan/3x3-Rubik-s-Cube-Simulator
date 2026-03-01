@@ -18,6 +18,7 @@ public:
     std::function<void()>              onRedo;
     std::function<void(const std::string&)> onLoadFile;
     std::function<void(const std::string&)> onSaveFile;
+    std::function<void()> onClearSequence;
 
     // Draw all ImGui windows. Call between imgui.newFrame() and
     // imgui.drawFrame().
