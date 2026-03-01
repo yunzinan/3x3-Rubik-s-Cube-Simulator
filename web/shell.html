@@ -19,10 +19,19 @@
   <script>
   (function() {
     var canvas = document.getElementById('canvas');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
     function sizeCanvas() {
-      var w = window.innerWidth, h = window.innerHeight;
-      canvas.width = w;
-      canvas.height = h;
+      var w = window.innerWidth;
+      var h = window.innerHeight;
+      var pw = Math.round(w * dpr);
+      var ph = Math.round(h * dpr);
+      canvas.width = pw;
+      canvas.height = ph;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      if (typeof Module !== 'undefined' && Module.emscripten_set_canvas_element_size) {
+        Module.emscripten_set_canvas_element_size(canvas, pw, ph);
+      }
     }
     sizeCanvas();
     window.addEventListener('resize', sizeCanvas);
@@ -32,6 +41,8 @@
     var preRun = Module.preRun || [];
     Module.preRun = preRun.concat([function() {
       Module.canvas = document.getElementById('canvas');
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      sizeCanvas();
     }]);
     window.Module = Module;
   })();

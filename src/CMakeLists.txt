@@ -133,7 +133,9 @@ if(BUILD_WEB_APP)
         "SHELL:-s RUNTIME_DEBUG=1"
         "SHELL:-s ASSERTIONS=2"
         "SHELL:--profiling"
+        "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html"
         "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/sequence.json@/sequence.json"
+        "SHELL:--preload-file ${IMGUI_DIR}/misc/fonts@/fonts"
         "SHELL:--pre-js ${CMAKE_SOURCE_DIR}/web/pre.js"
     )
 

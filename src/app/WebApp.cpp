@@ -16,7 +16,6 @@ using namespace Magnum::Math::Literals;
 WebApp::WebApp(const Arguments& arguments)
     : EmscriptenApplication{arguments, Configuration{}
           .setTitle("Rubik's Cube Simulator (Web)")
-          .setSize({1024, 768})
           .setWindowFlags(Configuration::WindowFlag::Resizable)}
 {
     Logger::init();
@@ -30,9 +29,20 @@ WebApp::WebApp(const Arguments& arguments)
     const Vector2 uiSize = Vector2{windowSize()}/dpiScaling();
     const float fontScale = Float(framebufferSize().x()) /
         std::max(Float(uiSize.x()), 1.0f);
-    ImFontConfig fontCfg;
-    fontCfg.SizePixels = 16.0f * fontScale;
-    ImGui::GetIO().Fonts->AddFontDefault(&fontCfg);
+    const float fontPixels = (18.0f * fontScale);
+    ImFont* font = nullptr;
+#ifdef __EMSCRIPTEN__
+    {
+        const char* ttfPath = "/fonts/DroidSans.ttf";
+        font = ImGui::GetIO().Fonts->AddFontFromFileTTF(ttfPath, fontPixels);
+    }
+#endif
+    if (!font) {
+        ImFontConfig fontCfg;
+        fontCfg.SizePixels = fontPixels;
+        ImGui::GetIO().Fonts->AddFontDefault(&fontCfg);
+    }
+    ImGui::GetStyle().ScaleAllSizes(fontScale);
 
     imgui_ = ImGuiIntegration::Context(*ImGui::GetCurrentContext(),
         uiSize, windowSize(), framebufferSize());
