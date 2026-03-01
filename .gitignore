@@ -1,0 +1,63 @@
+# ----- Build -----
+build/
+out/
+cmake-build-*/
+*.dir/
+
+# ----- CMake -----
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+!cmake/*.cmake
+
+# ----- Compiled / binaries -----
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# ----- IDE / Editor -----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-*
+
+# ----- macOS -----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ----- ImGui (runtime config) -----
+imgui.ini
+
+# ----- Emscripten / Web -----
+*.wasm
+*.js.map
+*.data
+
+# ----- Dependencies (fetched by CMake) -----
+_deps/
+
+# ----- Debug / logs -----
+*.log
+core
+core.*
+
+# ----- Misc -----
+*.bak
+*.tmp
+*.temp
+.cache/
