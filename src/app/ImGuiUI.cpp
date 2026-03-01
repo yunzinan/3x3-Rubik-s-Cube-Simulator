@@ -1,8 +1,15 @@
 #include "app/ImGuiUI.h"
 
+#include <cstring>
 #include <imgui.h>
 
 namespace rubik {
+
+void ImGuiUI::setFilePathDefault(const std::string& path) {
+    const std::size_t maxLen = sizeof(filePathBuf_) - 1;
+    std::strncpy(filePathBuf_, path.c_str(), maxLen);
+    filePathBuf_[maxLen] = '\0';
+}
 
 void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/) {
     ImGui::SetNextWindowPos({10, 10}, ImGuiCond_FirstUseEver);

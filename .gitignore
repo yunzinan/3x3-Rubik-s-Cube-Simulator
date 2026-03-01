@@ -1,8 +1,13 @@
 # ----- Build -----
 build/
+build-web/
 out/
 cmake-build-*/
 *.dir/
+.ninja_deps
+.ninja_log
+install_manifest.txt
+compile_commands.json
 
 # ----- CMake -----
 CMakeCache.txt
@@ -34,6 +39,13 @@ Makefile
 .project
 .settings/
 *.sublime-*
+*.user
+*.suo
+*.vcxproj.user
+*.pbxuser
+*.mode1v3
+*.mode2v3
+xcuserdata/
 
 # ----- macOS -----
 .DS_Store
@@ -43,10 +55,11 @@ Makefile
 # ----- ImGui (runtime config) -----
 imgui.ini
 
-# ----- Emscripten / Web -----
+# ----- Emscripten / Web (build outputs; build-web/ also ignored) -----
 *.wasm
 *.js.map
 *.data
+*.mem
 
 # ----- Dependencies (fetched by CMake) -----
 _deps/

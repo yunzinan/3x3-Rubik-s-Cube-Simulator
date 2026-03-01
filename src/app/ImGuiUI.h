@@ -24,6 +24,8 @@ public:
     // imgui.drawFrame().
     void draw(const History& history, bool isAnimating, float animSpeed);
 
+    void setFilePathDefault(const std::string& path);
+
     // Returns the animation speed value set by the slider.
     float animationSpeed() const { return animSpeed_; }
 

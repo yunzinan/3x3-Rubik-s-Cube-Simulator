@@ -26,9 +26,16 @@ set(UTILS_SOURCES
 )
 
 # App
-set(APP_SOURCES
-    app/DesktopApp.h   app/DesktopApp.cpp
+set(APP_COMMON_SOURCES
     app/ImGuiUI.h      app/ImGuiUI.cpp
+)
+
+set(DESKTOP_APP_SOURCES
+    app/DesktopApp.h   app/DesktopApp.cpp
+)
+
+set(WEB_APP_SOURCES
+    app/WebApp.h       app/WebApp.cpp
 )
 
 # ── Desktop Application ─────────────────────────────────────────────────────
@@ -40,7 +47,8 @@ if(BUILD_DESKTOP_APP)
         ${RENDER_SOURCES}
         ${ANIMATION_SOURCES}
         ${UTILS_SOURCES}
-        ${APP_SOURCES}
+        ${APP_COMMON_SOURCES}
+        ${DESKTOP_APP_SOURCES}
     )
 
     target_include_directories(RubiksCube PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -66,4 +74,68 @@ if(BUILD_DESKTOP_APP)
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${IMGUI_DIR}/misc/fonts" "$<TARGET_FILE_DIR:RubiksCube>/fonts"
         COMMENT "Copying ImGui fonts for HiDPI"
     )
+endif()
+
+# ── Web Application (Emscripten + WebAssembly) ──────────────────────────────
+
+if(BUILD_WEB_APP)
+    set(_web_emscripten OFF)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        set(_web_emscripten ON)
+    endif()
+    if(CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "Emscripten\\.cmake$")
+        set(_web_emscripten ON)
+    endif()
+    if(NOT _web_emscripten)
+        message(FATAL_ERROR "BUILD_WEB_APP=ON requires Emscripten toolchain (emcmake/em++).")
+    endif()
+    unset(_web_emscripten)
+
+    add_executable(RubiksCubeWeb
+        main_web.cpp
+        ${CORE_SOURCES}
+        ${RENDER_SOURCES}
+        ${ANIMATION_SOURCES}
+        ${UTILS_SOURCES}
+        ${APP_COMMON_SOURCES}
+        ${WEB_APP_SOURCES}
+    )
+
+    target_include_directories(RubiksCubeWeb PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+    # Silence deprecation warnings from Magnum EmscriptenApplication (uses old __EMSCRIPTEN_* macros)
+    target_compile_options(RubiksCubeWeb PRIVATE -Wno-deprecated-pragma)
+
+    target_link_libraries(RubiksCubeWeb PRIVATE
+        Corrade::Utility
+        Magnum::EmscriptenApplication
+        Magnum::GL
+        Magnum::Magnum
+        Magnum::MeshTools
+        Magnum::Primitives
+        Magnum::SceneGraph
+        Magnum::Shaders
+        Magnum::Trade
+        MagnumIntegration::ImGui
+        spdlog::spdlog
+        nlohmann_json::nlohmann_json
+    )
+
+    target_link_options(RubiksCubeWeb PRIVATE
+        "SHELL:-s WASM=1"
+        "SHELL:-s ALLOW_MEMORY_GROWTH=1"
+        "SHELL:-s USE_WEBGL2=0"
+        "SHELL:-s FULL_ES2=1"
+        "SHELL:-s MIN_WEBGL_VERSION=1"
+        "SHELL:-s MAX_WEBGL_VERSION=1"
+        "SHELL:-s FORCE_FILESYSTEM=1"
+        "SHELL:-s EMULATE_FUNCTION_POINTER_CASTS=1"
+        "SHELL:-s RUNTIME_DEBUG=1"
+        "SHELL:-s ASSERTIONS=2"
+        "SHELL:--profiling"
+        "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/sequence.json@/sequence.json"
+        "SHELL:--pre-js ${CMAKE_SOURCE_DIR}/web/pre.js"
+    )
+
+    set_target_properties(RubiksCubeWeb PROPERTIES SUFFIX ".html")
 endif()

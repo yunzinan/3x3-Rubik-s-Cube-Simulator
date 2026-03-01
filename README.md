@@ -2,9 +2,6 @@
 
 Rubik's Cube Simulator, implemented in Modern C++.
 
-Current Version only supports Desktop Application. Web Application is coming 
-soon.
-
 ## Quick Start
 
 ### Prerequisites
@@ -64,6 +61,58 @@ If the executable is under `build/src` (depends on your generator), use:
 ```
 
 On first run, ImGui fonts are copied to a `fonts/` directory next to the executable for HiDPI; if the UI text looks wrong, ensure that directory exists.
+
+### Build and run the WebAssembly app
+
+The web target is built with Emscripten and keeps the same rendering / animation / interaction logic as the desktop version.
+
+**Prerequisite:** Install [Emscripten SDK (emsdk)](https://emscripten.org/docs/getting_started/downloads.html), then **activate it in the current terminal** so `emcmake` and `emcc` are on `PATH`:
+
+```bash
+# If emsdk is at ~/emsdk (adjust path if needed):
+source ~/emsdk/emsdk_env.sh
+# Verify:
+which emcmake   # should print a path, e.g. .../emsdk/upstream/emscripten/emcmake
+```
+
+From the project root (with emsdk activated):
+
+```bash
+# Create and enter web build directory
+mkdir build-web && cd build-web
+
+# Configure with Emscripten toolchain
+emcmake cmake -DBUILD_DESKTOP_APP=OFF -DBUILD_WEB_APP=ON ..
+
+# Build
+cmake --build .
+```
+
+Build output (e.g. `build-web/Release/bin/` or `build-web/src/`) contains:
+
+- `RubiksCubeWeb.html`
+- `RubiksCubeWeb.js`
+- `RubiksCubeWeb.wasm`
+- `RubiksCubeWeb.data` (contains preloaded `sequence.json`)
+
+**在浏览器中打开界面：** 构建完成后不能直接双击 `.html` 文件（WASM 需通过 HTTP 加载）。需要在本机起一个本地服务器，再在浏览器访问：
+
+```bash
+# 进入产物所在目录（根据你的 CMake 生成器可能是 Release/bin 或就在 build-web 下）
+cd build-web/Release/bin
+# 若没有 Release/bin，先看看 build-web 下是否有 RubiksCubeWeb.html，再 cd 到该目录
+
+# 用 Emscripten 自带的服务器（需已 source emsdk_env.sh）
+emrun --no_browser --port 8080 .
+```
+
+然后在浏览器打开：**http://localhost:8080/RubiksCubeWeb.html** 即可看到魔方界面。页面使用 Emscripten 默认壳，可能带有一块控制/输出区域，魔方 3D 视图为主要区域。
+
+Notes:
+
+- In browser, loading/saving sequence uses Emscripten virtual filesystem paths (default path in UI: `/sequence.json`).
+- For mouse pan, use right/middle drag or `Shift + Left Drag` (same as desktop fallback behavior).
+- 若终端里出现 `GET /.well-known/...` 的 404，是 Chrome 开发者工具自动请求，可忽略，不影响魔方页面。
 
 ## Features
 

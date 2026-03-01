@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+  <title>Rubik's Cube Simulator</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #2b2b2b; }
+    #canvas { display: block; width: 100%; height: 100%; outline: none; }
+    /* Hide default Emscripten stdout/stderr output so only the 3D view is visible */
+    #output { display: none !important; }
+    .emscripten { padding: 0; margin: 0; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" tabindex="1"></canvas>
+  <pre id="output"></pre>
+  <script>
+  (function() {
+    var canvas = document.getElementById('canvas');
+    function sizeCanvas() {
+      var w = window.innerWidth, h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+    }
+    sizeCanvas();
+    window.addEventListener('resize', sizeCanvas);
+    window.addEventListener('orientationchange', sizeCanvas);
+    var Module = typeof Module !== 'undefined' ? Module : {};
+    Module.canvas = canvas;
+    var preRun = Module.preRun || [];
+    Module.preRun = preRun.concat([function() {
+      Module.canvas = document.getElementById('canvas');
+    }]);
+    window.Module = Module;
+  })();
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>
