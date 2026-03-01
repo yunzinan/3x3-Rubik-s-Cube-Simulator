@@ -24,7 +24,7 @@ Advanced Features:
 
 - Zoom in & out: use the scroll wheel to zoom in & out.
 - Rotate View(Orbit): left click & drag to rotate the cube. 
-- Pan View: <Control> + left click & drag.
+- Pan View: <Shift> + left click & drag.
 
 
 ## File I/O Specification

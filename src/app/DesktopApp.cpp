@@ -20,8 +20,8 @@ DesktopApp::DesktopApp(const Arguments& arguments)
           .setSize({1024, 768})
           .setWindowFlags(Configuration::WindowFlag::Resizable)}
 {
-    // On macOS, SDL may translate Ctrl+LeftClick to right click, which breaks
-    // our Ctrl+drag pan gesture. Disable that emulation for consistent input.
+    // On macOS, SDL may translate Ctrl+LeftClick to right click. We use
+    // Shift+Left for pan; disable that emulation for consistent input.
     SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "0");
 
     Logger::init();

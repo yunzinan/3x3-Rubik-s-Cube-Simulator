@@ -69,6 +69,27 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
     ImGui::Text("State: %s", isAnimating ? "Moving" : "Idle");
 
     ImGui::End();
+
+    // --- Guide (top-right) ---
+    const float guideWidth = 280.0f;
+    const float pad = 10.0f;
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(displaySize.x - guideWidth - pad, pad),
+                            ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(guideWidth, 0), ImGuiCond_FirstUseEver); // 0 = auto height
+
+    ImGui::Begin("Guide", nullptr, ImGuiWindowFlags_NoCollapse);
+    ImGui::TextWrapped("Keyboard (cube moves):");
+    ImGui::BulletText("f / b / u / d / l / r  -- rotate face clockwise");
+    ImGui::BulletText("Shift + key  -- rotate face counterclockwise");
+    ImGui::BulletText("Ctrl+Z  -- Undo");
+    ImGui::BulletText("Ctrl+Y  -- Redo");
+    ImGui::Spacing();
+    ImGui::TextWrapped("View (camera):");
+    ImGui::BulletText("Left drag  -- orbit / rotate view");
+    ImGui::BulletText("Shift+Left or Right drag  -- pan view");
+    ImGui::BulletText("Scroll wheel  -- zoom in / out");
+    ImGui::End();
 }
 
 } // namespace rubik
