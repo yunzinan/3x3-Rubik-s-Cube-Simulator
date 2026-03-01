@@ -17,8 +17,13 @@ using namespace Magnum::Math::Literals;
 DesktopApp::DesktopApp(const Arguments& arguments)
     : Sdl2Application{arguments, Configuration{}
           .setTitle("Rubik's Cube Simulator")
-          .setSize({1024, 768})}
+          .setSize({1024, 768})
+          .setWindowFlags(Configuration::WindowFlag::Resizable)}
 {
+    // On macOS, SDL may translate Ctrl+LeftClick to right click, which breaks
+    // our Ctrl+drag pan gesture. Disable that emulation for consistent input.
+    SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "0");
+
     Logger::init();
     LOG_INFO("Starting Rubik's Cube Simulator");
 
@@ -144,12 +149,17 @@ void DesktopApp::keyPressEvent(KeyEvent& event) {
     if (imgui_.handleKeyPressEvent(event)) return;
 
     ctrlHeld_ = bool(event.modifiers() & Modifier::Ctrl);
+    const bool commandHeld = bool(event.modifiers() & Modifier::Super);
+    const bool shortcutHeld = ctrlHeld_ || commandHeld;
     bool shift = bool(event.modifiers() & Modifier::Shift);
 
-    if (ctrlHeld_) {
+    if (shortcutHeld) {
         if (event.key() == Key::Z) { doUndo(); event.setAccepted(); return; }
         if (event.key() == Key::Y) { doRedo(); event.setAccepted(); return; }
     }
+
+    if (event.key() == Key::Equal) { cubeScene_.arcBall().zoom(1.0f); event.setAccepted(); return; }
+    if (event.key() == Key::Minus) { cubeScene_.arcBall().zoom(-1.0f); event.setAccepted(); return; }
 
     auto charForKey = [&]() -> char {
         switch (event.key()) {
@@ -177,43 +187,63 @@ void DesktopApp::keyReleaseEvent(KeyEvent& event) {
 }
 
 void DesktopApp::pointerPressEvent(PointerEvent& event) {
-    if (imgui_.handlePointerPressEvent(event)) return;
+    if (imgui_.handlePointerPressEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
+
+    if (event.pointer() == Pointer::MouseRight ||
+        event.pointer() == Pointer::MouseMiddle) {
+        dragButton_ = event.pointer() == Pointer::MouseRight ?
+            DragButton::Right : DragButton::Middle;
+        lastMousePos_ = Vector2i{event.position()};
+        event.setAccepted();
+        return;
+    }
 
     if (event.pointer() == Pointer::MouseLeft) {
-        leftDragging_ = true;
+        dragButton_ = DragButton::Left;
         lastMousePos_ = Vector2i{event.position()};
         event.setAccepted();
     }
 }
 
 void DesktopApp::pointerReleaseEvent(PointerEvent& event) {
-    if (imgui_.handlePointerReleaseEvent(event)) return;
+    if (imgui_.handlePointerReleaseEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
 
-    if (event.pointer() == Pointer::MouseLeft) {
-        leftDragging_ = false;
-        event.setAccepted();
-    }
+    const bool releasingActiveButton =
+        (event.pointer() == Pointer::MouseLeft  && dragButton_ == DragButton::Left) ||
+        (event.pointer() == Pointer::MouseRight && dragButton_ == DragButton::Right) ||
+        (event.pointer() == Pointer::MouseMiddle && dragButton_ == DragButton::Middle);
+    if (!releasingActiveButton) return;
+
+    dragButton_ = DragButton::None;
+    event.setAccepted();
 }
 
 void DesktopApp::pointerMoveEvent(PointerMoveEvent& event) {
-    if (imgui_.handlePointerMoveEvent(event)) return;
+    if (imgui_.handlePointerMoveEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
 
-    if (leftDragging_) {
-        Vector2i pos{event.position()};
-        Vector2i delta = pos - lastMousePos_;
-        lastMousePos_ = pos;
+    if (dragButton_ == DragButton::None) return;
 
-        if (ctrlHeld_) {
-            cubeScene_.arcBall().pan(delta);
-        } else {
-            cubeScene_.arcBall().rotate(delta);
-        }
-        event.setAccepted();
-    }
+    Vector2i pos{event.position()};
+    Vector2i delta = pos - lastMousePos_;
+    lastMousePos_ = pos;
+
+    const SDL_Keymod mods = SDL_GetModState();
+    const bool shiftHeld = bool(event.modifiers() & Modifier::Shift) ||
+                           (mods & KMOD_SHIFT);
+    const bool shouldPan = dragButton_ == DragButton::Right ||
+                           dragButton_ == DragButton::Middle ||
+                           (dragButton_ == DragButton::Left && shiftHeld);
+    if (shouldPan) cubeScene_.arcBall().pan(delta);
+    else cubeScene_.arcBall().rotate(delta);
+
+    event.setAccepted();
 }
 
 void DesktopApp::scrollEvent(ScrollEvent& event) {
-    if (imgui_.handleScrollEvent(event)) {
+    const bool handledByImGui = imgui_.handleScrollEvent(event);
+    const bool mouseOnUi = ImGui::GetIO().WantCaptureMouse &&
+                           ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+    if (handledByImGui && mouseOnUi) {
         event.setAccepted();
         return;
     }

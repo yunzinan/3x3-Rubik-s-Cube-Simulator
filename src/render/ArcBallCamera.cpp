@@ -47,11 +47,16 @@ void ArcBallCamera::zoom(float delta) {
 }
 
 void ArcBallCamera::pan(const Vector2i& delta) {
-    float scale = distance_ * kPanSpeed;
-    Vector3 right = Matrix4::rotationY(Rad{azimuth_}).transformVector({1, 0, 0});
-    Vector3 up{0, 1, 0};
-    target_ -= right * Float(delta.x()) * scale;
-    target_ += up    * Float(delta.y()) * scale;
+    if (windowSize_.y() <= 0) return;
+
+    // Convert mouse pixels to world-space shift at the orbit depth.
+    // This keeps pan sensitivity consistent across resolutions and DPI.
+    constexpr Float verticalFovDeg = 35.0f;
+    const Float worldPerPixel = (2.0f * distance_ *
+        Math::tan(Rad{Deg{verticalFovDeg*0.5f}})) / Float(windowSize_.y());
+
+    panOffset_.x() -= Float(delta.x()) * worldPerPixel;
+    panOffset_.y() += Float(delta.y()) * worldPerPixel;
     updateTransform();
 }
 
@@ -60,10 +65,14 @@ void ArcBallCamera::updateTransform() {
     float cy = std::sin(elevation_);
     float cz = std::cos(elevation_) * std::sin(azimuth_);
 
-    Vector3 eye = target_ + Vector3{cz, cy, cx} * distance_;
+    Vector3 right = Matrix4::rotationY(Rad{azimuth_}).transformVector({1, 0, 0});
+    Vector3 up{0, 1, 0};
+    const Vector3 panWorld = right * panOffset_.x() + up * panOffset_.y();
+    Vector3 eye = target_ + Vector3{cz, cy, cx} * distance_ + panWorld;
+    Vector3 center = target_ + panWorld;
 
     cameraObject_.setTransformation(
-        Matrix4::lookAt(eye, target_, {0.0f, 1.0f, 0.0f}));
+        Matrix4::lookAt(eye, center, {0.0f, 1.0f, 0.0f}));
 }
 
 } // namespace rubik

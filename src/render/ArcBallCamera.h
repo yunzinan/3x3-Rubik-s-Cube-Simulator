@@ -39,16 +39,16 @@ private:
     Object3D& cameraObject_;
     Magnum::SceneGraph::Camera3D& camera_;
 
-    Magnum::Vector3 target_;
+    Magnum::Vector3 target_;  // orbit center (cube center), never changed by pan
     float distance_;
     float azimuth_   = 0.0f; // horizontal angle (radians)
     float elevation_ = 0.3f; // vertical angle (radians)
+    Magnum::Vector2 panOffset_{0.0f}; // pan in view plane (right, up), so rotation stays around target_
 
     Magnum::Vector2i windowSize_;
 
     static constexpr float kZoomSpeed = 0.1f;
     static constexpr float kRotateSpeed = 0.005f;
-    static constexpr float kPanSpeed = 0.003f;
     static constexpr float kMinDistance = 3.0f;
     static constexpr float kMaxDistance = 30.0f;
 };

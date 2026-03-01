@@ -18,6 +18,13 @@ public:
     explicit DesktopApp(const Arguments& arguments);
 
 private:
+    enum class DragButton {
+        None,
+        Left,
+        Right,
+        Middle
+    };
+
     void drawEvent() override;
     void viewportEvent(ViewportEvent& event) override;
     void keyPressEvent(KeyEvent& event) override;
@@ -42,7 +49,7 @@ private:
     Magnum::ImGuiIntegration::Context imgui_{Magnum::NoCreate};
     Magnum::Timeline timeline_;
 
-    bool leftDragging_  = false;
+    DragButton dragButton_ = DragButton::None;
     Magnum::Vector2i lastMousePos_;
     bool ctrlHeld_ = false;
 };
