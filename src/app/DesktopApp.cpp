@@ -2,9 +2,11 @@
 #include "utils/FileIO.h"
 #include "utils/Logger.h"
 
+#include <algorithm>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
+#include <SDL.h>
 #include <imgui.h>
 
 namespace rubik {
@@ -24,7 +26,31 @@ DesktopApp::DesktopApp(const Arguments& arguments)
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
     GL::Renderer::setClearColor(0x2b2b2b_rgbf);
 
-    imgui_ = ImGuiIntegration::Context{windowSize()};
+    // Create ImGui context and load TTF font scaled for HiDPI (crisp text).
+    // Default ProggyClean is a bitmap and scales poorly; use a vector font.
+    ImGui::CreateContext();
+    const Vector2 uiSize = Vector2{windowSize()}/dpiScaling();
+    const float fontScale = Float(framebufferSize().x()) / std::max(Float(uiSize.x()), 1.0f);
+    const float fontPixels = 16.0f * fontScale;
+
+    std::string fontPath;
+    if (char* basePath = SDL_GetBasePath()) {
+        fontPath = std::string(basePath) + "fonts/DroidSans.ttf";
+        SDL_free(basePath);
+    }
+    if (fontPath.empty()) fontPath = "fonts/DroidSans.ttf";
+
+    ImFont* font = nullptr;
+    if (!fontPath.empty()) {
+        font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fontPath.c_str(), fontPixels);
+    }
+    if (!font) {
+        ImFontConfig fontCfg;
+        fontCfg.SizePixels = fontPixels;
+        ImGui::GetIO().Fonts->AddFontDefault(&fontCfg);
+    }
+    imgui_ = ImGuiIntegration::Context(*ImGui::GetCurrentContext(),
+        uiSize, windowSize(), framebufferSize());
 
     cubeScene_.setup(framebufferSize());
     cubeScene_.syncFromState(cubeState_);
@@ -87,15 +113,19 @@ void DesktopApp::drawEvent() {
     imgui_.newFrame();
     ui_.draw(history_, animManager_.isAnimating(), animManager_.moveDuration);
     imgui_.updateApplicationCursor(*this);
-    GL::Renderer::enable(GL::Renderer::Feature::Blending);
+    GL::Renderer::setBlendEquation(GL::Renderer::BlendEquation::Add,
+                                   GL::Renderer::BlendEquation::Add);
     GL::Renderer::setBlendFunction(
         GL::Renderer::BlendFunction::SourceAlpha,
         GL::Renderer::BlendFunction::OneMinusSourceAlpha);
-    GL::Renderer::disable(GL::Renderer::Feature::DepthTest);
+    GL::Renderer::enable(GL::Renderer::Feature::Blending);
     GL::Renderer::enable(GL::Renderer::Feature::ScissorTest);
+    GL::Renderer::disable(GL::Renderer::Feature::DepthTest);
+    GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
     imgui_.drawFrame();
-    GL::Renderer::disable(GL::Renderer::Feature::ScissorTest);
+    GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
+    GL::Renderer::disable(GL::Renderer::Feature::ScissorTest);
     GL::Renderer::disable(GL::Renderer::Feature::Blending);
 
     swapBuffers();
@@ -106,7 +136,8 @@ void DesktopApp::drawEvent() {
 void DesktopApp::viewportEvent(ViewportEvent& event) {
     GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
     cubeScene_.reshape(event.framebufferSize());
-    imgui_.relayout(event.windowSize());
+    imgui_.relayout(Vector2{event.windowSize()}/event.dpiScaling(),
+                    event.windowSize(), event.framebufferSize());
 }
 
 void DesktopApp::keyPressEvent(KeyEvent& event) {

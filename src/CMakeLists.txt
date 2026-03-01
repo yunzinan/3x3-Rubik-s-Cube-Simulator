@@ -59,4 +59,11 @@ if(BUILD_DESKTOP_APP)
         spdlog::spdlog
         nlohmann_json::nlohmann_json
     )
+
+    # Copy ImGui TTF fonts next to executable for HiDPI crisp text
+    add_custom_command(TARGET RubiksCube POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:RubiksCube>/fonts"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${IMGUI_DIR}/misc/fonts" "$<TARGET_FILE_DIR:RubiksCube>/fonts"
+        COMMENT "Copying ImGui fonts for HiDPI"
+    )
 endif()
