@@ -71,7 +71,7 @@ Web output: `build-web/bin/` (HTML, JS, WASM, data). WASM must be served over HT
 
 - **Move sound:** Place `audio.mp3` in project root; desktop uses SDL2_mixer, web preloads it.
 - **Camera:** Orbit, zoom, pan (right/middle drag or Shift+left drag).
-- **Input:** Keyboard, mouse, file I/O — see [interface-specification.md](interface-specification.md).
+- **Input:** Keyboard, mouse, file I/O — see [interface-specification.md](docs/interface-specification.md).
 - **3D visualization** with move animation.
 
 ---
