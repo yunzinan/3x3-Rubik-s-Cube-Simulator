@@ -2,7 +2,7 @@
 
 ![Web App Demo](doc/preview.gif)
 
-A 3×3 Rubik's Cube simulator implemented in Modern C++.
+A 3×3 Rubik's Cube simulator implemented in Modern C++, supporting both Desktop and Web applications.
 
 ## Prerequisites
 
