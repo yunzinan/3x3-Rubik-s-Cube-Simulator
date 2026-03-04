@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
+#include <string>
 
 namespace rubik {
 
@@ -11,6 +12,14 @@ using json = nlohmann::json;
 
 std::vector<Move> FileIO::loadControlSequence(const std::string& path) {
     std::ifstream ifs(path);
+    if (!ifs.is_open()) {
+        std::string prefix;
+        for (int up = 1; up <= 3; ++up) {
+            prefix += "../";
+            ifs.open(prefix + path);
+            if (ifs.is_open()) break;
+        }
+    }
     if (!ifs.is_open()) {
         LOG_ERROR("FileIO: cannot open '{}'", path);
         return {};

@@ -24,16 +24,14 @@ namespace CubeColors {
     inline const Magnum::Color3 Orange = 0xff5800_rgbf;
     inline const Magnum::Color3 Green  = 0x009e60_rgbf;
     inline const Magnum::Color3 Blue   = 0x0051ba_rgbf;
-    inline const Magnum::Color3 Black  = 0x1a1a1a_rgbf; // internal faces
+    inline const Magnum::Color3 Black  = 0x1a1a1a_rgbf; // internal / body plastic
 }
 
-// Draws one cubie (small cube) with per-face colouring.
-// Each cubie is composed of 6 quads, each a separate GL::Mesh so we can
-// assign individual colours.
+// Draws one cubie as a rounded black body with coloured sticker faces.
 class CubieDrawable : public Magnum::SceneGraph::Drawable3D {
 public:
     // homePos: initial grid position {-1..1}^3 – determines which faces
-    //          get real colours vs. black.
+    //          get real colours vs. internal (no sticker).
     explicit CubieDrawable(
         Object3D& object,
         Magnum::Shaders::PhongGL& shader,
@@ -46,14 +44,16 @@ private:
 
     Magnum::Shaders::PhongGL& shader_;
 
-    // 6 face meshes with their colours
-    struct FaceMesh {
+    Magnum::GL::Mesh bodyMesh_;
+
+    struct Sticker {
         Magnum::GL::Mesh mesh;
         Magnum::Color3 color;
+        bool visible = false;
     };
-    std::array<FaceMesh, 6> faces_;
+    std::array<Sticker, 6> stickers_;
 
-    void buildFaces(Magnum::Vector3i homePos);
+    void buildMeshes(Magnum::Vector3i homePos);
 };
 
 } // namespace rubik
