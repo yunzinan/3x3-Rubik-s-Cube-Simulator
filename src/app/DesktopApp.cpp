@@ -60,8 +60,16 @@ DesktopApp::DesktopApp(const Arguments& arguments)
     cubeScene_.setup(framebufferSize());
     cubeScene_.syncFromState(cubeState_);
 
+    std::string audioPath = "audio.mp3";
+    if (char* basePath = SDL_GetBasePath()) {
+        audioPath = std::string(basePath) + "audio.mp3";
+        SDL_free(basePath);
+    }
+    audioPlayer_.init(audioPath);
+
     animManager_.onMoveBegin = [this](Move m) {
         cubeScene_.beginFaceRotation(m.face, cubeState_);
+        audioPlayer_.playMoveSound();
         LOG_DEBUG("Animation begin: {}", m.toChar());
     };
 

@@ -2,6 +2,7 @@
 
 #include "animation/AnimationManager.h"
 #include "app/ImGuiUI.h"
+#include "audio/AudioPlayer.h"
 #include "core/CubeState.h"
 #include "core/History.h"
 #include "render/CubeScene.h"
@@ -43,6 +44,7 @@ private:
     History   history_;
 
     AnimationManager animManager_;
+    AudioPlayer      audioPlayer_;
     CubeScene        cubeScene_;
     ImGuiUI          ui_;
 

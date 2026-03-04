@@ -50,8 +50,11 @@ WebApp::WebApp(const Arguments& arguments)
     cubeScene_.setup(framebufferSize());
     cubeScene_.syncFromState(cubeState_);
 
+    audioPlayer_.init("/audio.mp3");  // preloaded to VFS
+
     animManager_.onMoveBegin = [this](Move m) {
         cubeScene_.beginFaceRotation(m.face, cubeState_);
+        audioPlayer_.playMoveSound();
         LOG_DEBUG("Animation begin: {}", m.toChar());
     };
 
@@ -142,6 +145,7 @@ void WebApp::viewportEvent(ViewportEvent& event) {
 }
 
 void WebApp::keyPressEvent(KeyEvent& event) {
+    audioPlayer_.notifyUserGesture();  // Unlock web audio on first key (browser policy)
     if (imgui_.handleKeyPressEvent(event)) return;
 
     const bool ctrlHeld = bool(event.modifiers() & Modifier::Ctrl);
@@ -190,6 +194,7 @@ void WebApp::keyReleaseEvent(KeyEvent& event) {
 }
 
 void WebApp::pointerPressEvent(PointerEvent& event) {
+    audioPlayer_.notifyUserGesture();  // Unlock web audio on first click (browser policy)
     if (imgui_.handlePointerPressEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
 
     if (event.pointer() == Pointer::MouseRight ||

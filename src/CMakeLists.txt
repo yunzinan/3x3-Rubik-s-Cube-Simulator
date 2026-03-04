@@ -19,6 +19,11 @@ set(ANIMATION_SOURCES
     animation/AnimationManager.h   animation/AnimationManager.cpp
 )
 
+# Audio (move sound effect)
+set(AUDIO_SOURCES
+    audio/AudioPlayer.h   audio/AudioPlayer.cpp
+)
+
 # Utils
 set(UTILS_SOURCES
     utils/Logger.h     utils/Logger.cpp
@@ -41,17 +46,40 @@ set(WEB_APP_SOURCES
 # ── Desktop Application ─────────────────────────────────────────────────────
 
 if(BUILD_DESKTOP_APP)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SDL2_MIXER QUIET SDL2_mixer)
+    endif()
+    if(NOT SDL2_MIXER_FOUND)
+        find_path(SDL2_MIXER_INCLUDE_DIR NAMES SDL_mixer.h PATH_SUFFIXES SDL2)
+        find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
+        if(SDL2_MIXER_INCLUDE_DIR AND SDL2_MIXER_LIBRARY)
+            set(SDL2_MIXER_FOUND ON)
+        endif()
+    endif()
+
     add_executable(RubiksCube
         main.cpp
         ${CORE_SOURCES}
         ${RENDER_SOURCES}
         ${ANIMATION_SOURCES}
+        ${AUDIO_SOURCES}
         ${UTILS_SOURCES}
         ${APP_COMMON_SOURCES}
         ${DESKTOP_APP_SOURCES}
     )
 
     target_include_directories(RubiksCube PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    if(SDL2_MIXER_FOUND)
+        target_compile_definitions(RubiksCube PRIVATE RUBIK_HAVE_SDL2_MIXER=1)
+        if(DEFINED SDL2_MIXER_LIBRARY)
+            target_include_directories(RubiksCube PRIVATE ${SDL2_MIXER_INCLUDE_DIR})
+            target_link_libraries(RubiksCube PRIVATE ${SDL2_MIXER_LIBRARY})
+        else()
+            target_include_directories(RubiksCube PRIVATE ${SDL2_MIXER_INCLUDE_DIRS})
+            target_link_libraries(RubiksCube PRIVATE ${SDL2_MIXER_LIBRARIES})
+        endif()
+    endif()
 
     target_link_libraries(RubiksCube PRIVATE
         Corrade::Utility
@@ -68,12 +96,19 @@ if(BUILD_DESKTOP_APP)
         nlohmann_json::nlohmann_json
     )
 
-    # Copy ImGui TTF fonts next to executable for HiDPI crisp text
+    # Copy ImGui TTF fonts and move sound next to executable
+    set(RUBIK_AUDIO_FILE "${CMAKE_SOURCE_DIR}/audio.mp3")
     add_custom_command(TARGET RubiksCube POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:RubiksCube>/fonts"
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${IMGUI_DIR}/misc/fonts" "$<TARGET_FILE_DIR:RubiksCube>/fonts"
         COMMENT "Copying ImGui fonts for HiDPI"
     )
+    if(SDL2_MIXER_FOUND AND EXISTS "${RUBIK_AUDIO_FILE}")
+        add_custom_command(TARGET RubiksCube POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${RUBIK_AUDIO_FILE}" "$<TARGET_FILE_DIR:RubiksCube>/audio.mp3"
+            COMMENT "Copying move sound (audio.mp3)"
+        )
+    endif()
 endif()
 
 # ── Web Application (Emscripten + WebAssembly) ──────────────────────────────
@@ -96,6 +131,7 @@ if(BUILD_WEB_APP)
         ${CORE_SOURCES}
         ${RENDER_SOURCES}
         ${ANIMATION_SOURCES}
+        ${AUDIO_SOURCES}
         ${UTILS_SOURCES}
         ${APP_COMMON_SOURCES}
         ${WEB_APP_SOURCES}
@@ -138,6 +174,11 @@ if(BUILD_WEB_APP)
         "SHELL:--preload-file ${IMGUI_DIR}/misc/fonts@/fonts"
         "SHELL:--pre-js ${CMAKE_SOURCE_DIR}/web/pre.js"
     )
+    if(EXISTS "${CMAKE_SOURCE_DIR}/audio.mp3")
+        target_link_options(RubiksCubeWeb PRIVATE
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/audio.mp3@/audio.mp3"
+        )
+    endif()
 
     set_target_properties(RubiksCubeWeb PROPERTIES SUFFIX ".html")
 endif()

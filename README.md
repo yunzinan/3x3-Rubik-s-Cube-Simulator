@@ -9,12 +9,13 @@ Rubik's Cube Simulator, implemented in Modern C++.
 - **CMake** ≥ 3.20
 - **C++17** compiler (e.g. GCC 9+, Clang 10+, MSVC 2019+)
 - **SDL2** (required for the desktop app: windowing and input)
+- **SDL2_mixer** (optional, for move sound effect on desktop; if not found, the app builds without sound)
 
-Install SDL2 (examples):
+Install SDL2 and SDL2_mixer (examples):
 
-- **macOS (Homebrew):** `brew install sdl2`
-- **Ubuntu/Debian:** `sudo apt install libsdl2-dev`
-- **Windows:** Download from [SDL](https://wiki.libsdl.org/Installation) or use vcpkg: `vcpkg install sdl2`
+- **macOS (Homebrew):** `brew install sdl2 sdl2_mixer`
+- **Ubuntu/Debian:** `sudo apt install libsdl2-dev libsdl2-mixer-dev`
+- **Windows:** Download from [SDL](https://wiki.libsdl.org/Installation) or use vcpkg: `vcpkg install sdl2 sdl2-mixer`
 
 All other dependencies (Corrade, Magnum, MagnumIntegration, Dear ImGui, spdlog, nlohmann/json) are fetched and configured by CMake via FetchContent; no manual install is needed.
 
@@ -196,6 +197,8 @@ cmake --build .
 Locate the output (e.g. `build-web/Release/bin/` or `build-web/src/`), then serve that directory over HTTP (e.g. `emrun --no_browser --port 8080 .`) and open **http://localhost:8080/RubiksCubeWeb.html** in the browser.
 
 ## Features
+
+- **Move sound effect:** Each cube move (keyboard or loaded sequence) plays a short sound. Place `audio.mp3` in the project root; the desktop build copies it next to the executable, and the web build preloads it. Desktop requires SDL2_mixer for playback; if SDL2_mixer is not found, the app still builds and runs without sound.
 
 User Interface:
 
