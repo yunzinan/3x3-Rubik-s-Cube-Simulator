@@ -1,6 +1,6 @@
 # 3x3-Rubik-s-Cube-Simulator
 
-![Web App Demo](doc/preview.gif)
+![Web App Demo](docs/preview.gif)
 
 A 3×3 Rubik's Cube simulator implemented in Modern C++, supporting both Desktop and Web applications.
 
