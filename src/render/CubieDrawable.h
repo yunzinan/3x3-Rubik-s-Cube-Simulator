@@ -48,6 +48,7 @@ private:
 
     struct Sticker {
         Magnum::GL::Mesh mesh;
+        Magnum::GL::Mesh borderMesh;  // vertical wall from sticker to body
         Magnum::Color3 color;
         bool visible = false;
     };

@@ -44,7 +44,7 @@ void CubeScene::setup(const Vector2i& windowSize) {
     for (int i = 0; i < kCubieCount; ++i) {
         const auto& c = cubies[i];
         auto* obj = new Object3D{cubeRoot_};
-        constexpr float gap = 1.02f; // slight gap between cubies
+        constexpr float gap = 1.0f;   // cubies touch, no gap
         obj->setTransformation(
             Matrix4::translation(Vector3{c.homePosition} * gap));
 
@@ -54,7 +54,7 @@ void CubeScene::setup(const Vector2i& windowSize) {
 }
 
 void CubeScene::syncFromState(const CubeState& state) {
-    constexpr float gap = 1.02f;
+    constexpr float gap = 1.0f;
     const auto& cubies = state.cubies();
     for (int i = 0; i < kCubieCount; ++i) {
         const auto& c = cubies[i];

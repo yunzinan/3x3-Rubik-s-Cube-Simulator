@@ -1,6 +1,7 @@
 #include "render/CubieDrawable.h"
 
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Constants.h>
 #include <Magnum/Mesh.h>
 #include <Corrade/Containers/ArrayView.h>
@@ -16,12 +17,12 @@ using namespace Magnum::Math::Literals;
 namespace {
 
 // ── Geometry parameters ─────────────────────────────────────────────────────
-// Body: slightly smaller than 1.0 pitch so gaps appear between cubies.
-constexpr float kBodyHalf       = 0.48f;
+// Body: 0.5 half-extent = 1.0 unit pitch, cubies touch with no gaps.
+constexpr float kBodyHalf       = 0.5f;
 constexpr float kBevelRadius    = 0.06f;
 constexpr int   kBevelSegments  = 5;
 // Stickers: smaller rounded rectangles raised above the body face.
-constexpr float kStickerHalf    = 0.39f;
+constexpr float kStickerHalf    = 0.41f;  // scaled with body (was 0.39 @ 0.48)
 constexpr float kStickerCorner  = 0.03f;
 constexpr float kStickerElev    = 0.005f;
 constexpr int   kStickerSegments = 4;
@@ -198,6 +199,67 @@ GL::Mesh buildBodyMesh() {
     return uploadMesh(verts, idx);
 }
 
+// ── Sticker border (well side wall) mesh ─────────────────────────────────────
+// Vertical wall connecting sticker perimeter down to body surface.
+// Closes the gap between sticker and plastic body.
+
+GL::Mesh buildStickerBorderMesh(int faceIdx) {
+    const float S   = kStickerHalf;
+    const float R   = kStickerCorner;
+    const int   N   = kStickerSegments;
+    const float piH = Math::Constants<float>::piHalf();
+
+    int   axis = faceIdx / 2;
+    float sign = (faceIdx % 2 == 0) ? 1.0f : -1.0f;
+    int   u    = (axis + 1) % 3;
+    int   v    = (axis + 2) % 3;
+
+    float distTop    = kBodyHalf + kStickerElev;
+    float distBottom = kBodyHalf;
+
+    std::vector<Vertex> verts;
+    std::vector<UnsignedInt> idx;
+
+    float ci     = S - R;
+    float cU[4]  = { ci, -ci, -ci,  ci};
+    float cV[4]  = { ci,  ci, -ci, -ci};
+    int   total  = 4 * N;
+
+    for (int c = 0; c < 4; ++c) {
+        float a0 = float(c) * piH;
+        for (int j = 0; j < N; ++j) {
+            float a = a0 + float(j) / float(N) * piH;
+            float pu = cU[c] + R * std::cos(a);
+            float pv = cV[c] + R * std::sin(a);
+
+            // Outward normal in face's (u,v) plane (from sticker center to perimeter)
+            Vector3 n{}; n[axis] = 0.0f;
+            n[u] = pu;
+            n[v] = pv;
+            float len = std::sqrt(n[u]*n[u] + n[v]*n[v]);
+            if (len > 1e-6f) { n[u] /= len; n[v] /= len; }
+            else { n[u] = 1.0f; n[v] = 0.0f; }
+
+            Vector3 pTop{};    pTop[axis] = sign * distTop;    pTop[u] = pu; pTop[v] = pv;
+            Vector3 pBottom{}; pBottom[axis] = sign * distBottom; pBottom[u] = pu; pBottom[v] = pv;
+            verts.push_back({pTop, n});
+            verts.push_back({pBottom, n});
+        }
+    }
+
+    for (int i = 0; i < total; ++i) {
+        int next = (i + 1) % total;
+        UnsignedInt a = UnsignedInt(2 * i);
+        UnsignedInt b = UnsignedInt(2 * i + 1);
+        UnsignedInt c = UnsignedInt(2 * next + 1);
+        UnsignedInt d = UnsignedInt(2 * next);
+        if (sign > 0.0f) idx.insert(idx.end(), {a, b, c,  a, c, d});
+        else              idx.insert(idx.end(), {a, d, c,  a, c, b});
+    }
+
+    return uploadMesh(verts, idx);
+}
+
 // ── Rounded-rectangle sticker mesh ──────────────────────────────────────────
 // A triangle-fan with rounded corners, sitting just above the body face.
 
@@ -270,9 +332,10 @@ void CubieDrawable::buildMeshes(Vector3i homePos) {
     bodyMesh_ = buildBodyMesh();
     for (int i = 0; i < 6; ++i) {
         if (isExposedFace(i, homePos)) {
-            stickers_[i].mesh    = buildStickerMesh(i);
-            stickers_[i].color   = faceColor(i, homePos);
-            stickers_[i].visible = true;
+            stickers_[i].mesh       = buildStickerMesh(i);
+            stickers_[i].borderMesh = buildStickerBorderMesh(i);
+            stickers_[i].color      = faceColor(i, homePos);
+            stickers_[i].visible    = true;
         }
     }
 }
@@ -284,13 +347,24 @@ void CubieDrawable::draw(
     shader_
         .setTransformationMatrix(transformationMatrix)
         .setNormalMatrix(transformationMatrix.normalMatrix())
-        .setProjectionMatrix(camera.projectionMatrix())
+        .setProjectionMatrix(camera.projectionMatrix());
+
+    // Draw body with both sides visible so cubies look solid when viewed
+    // through gaps (no backface culling = interior faces visible)
+    GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
+    shader_
         .setDiffuseColor(CubeColors::Black)
         .setAmbientColor(CubeColors::Black * 0.15f)
         .draw(bodyMesh_);
+    GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
     for (auto& s : stickers_) {
         if (!s.visible) continue;
+        // Draw black border (well wall) first, then colored sticker on top
+        shader_
+            .setDiffuseColor(CubeColors::Black)
+            .setAmbientColor(CubeColors::Black * 0.15f)
+            .draw(s.borderMesh);
         shader_
             .setDiffuseColor(s.color)
             .setAmbientColor(s.color * 0.15f)
