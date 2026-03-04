@@ -354,7 +354,7 @@ void CubieDrawable::draw(
     GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
     shader_
         .setDiffuseColor(CubeColors::Black)
-        .setAmbientColor(CubeColors::Black * 0.15f)
+        .setAmbientColor(CubeColors::Black * 0.35f)
         .draw(bodyMesh_);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
@@ -363,11 +363,11 @@ void CubieDrawable::draw(
         // Draw black border (well wall) first, then colored sticker on top
         shader_
             .setDiffuseColor(CubeColors::Black)
-            .setAmbientColor(CubeColors::Black * 0.15f)
+            .setAmbientColor(CubeColors::Black * 0.35f)
             .draw(s.borderMesh);
         shader_
             .setDiffuseColor(s.color)
-            .setAmbientColor(s.color * 0.15f)
+            .setAmbientColor(s.color * 0.35f)
             .draw(s.mesh);
     }
 }

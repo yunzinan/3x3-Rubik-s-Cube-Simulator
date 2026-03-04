@@ -19,9 +19,9 @@ using Scene3D = Magnum::SceneGraph::Scene<
 namespace CubeColors {
     using namespace Magnum::Math::Literals;
     inline const Magnum::Color3 White  = 0xffffff_rgbf;
-    inline const Magnum::Color3 Yellow = 0xffd500_rgbf;
+    inline const Magnum::Color3 Yellow = 0xffed00_rgbf;  // pure yellow, less orange
     inline const Magnum::Color3 Red    = 0xc41e3a_rgbf;
-    inline const Magnum::Color3 Orange = 0xff5800_rgbf;
+    inline const Magnum::Color3 Orange = 0xff4500_rgbf;  // deeper orange-red, more distinct
     inline const Magnum::Color3 Green  = 0x009e60_rgbf;
     inline const Magnum::Color3 Blue   = 0x0051ba_rgbf;
     inline const Magnum::Color3 Black  = 0x1a1a1a_rgbf; // internal / body plastic

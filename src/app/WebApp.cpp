@@ -23,7 +23,7 @@ WebApp::WebApp(const Arguments& arguments)
 
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
-    GL::Renderer::setClearColor(0x2b2b2b_rgbf);
+    GL::Renderer::setClearColor(0xc8c8c8_rgbf);
 
     ImGui::CreateContext();
     const Vector2 uiSize = Vector2{windowSize()}/dpiScaling();

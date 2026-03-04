@@ -29,7 +29,7 @@ DesktopApp::DesktopApp(const Arguments& arguments)
 
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
-    GL::Renderer::setClearColor(0x2b2b2b_rgbf);
+    GL::Renderer::setClearColor(0xc8c8c8_rgbf);
 
     // Create ImGui context and load TTF font scaled for HiDPI (crisp text).
     // Default ProggyClean is a bitmap and scales poorly; use a vector font.

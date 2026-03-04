@@ -12,10 +12,11 @@ using namespace Magnum::Math::Literals;
 CubeScene::CubeScene() = default;
 
 void CubeScene::setup(const Vector2i& windowSize) {
-    // Shader
-    shader_ = Shaders::PhongGL{};
-    shader_.setLightPositions({{5.0f, 5.0f, 7.0f, 0.0f}})
-           .setSpecularColor(0x111111_rgbf)
+    // Shader: two lights (right + left) for even illumination
+    shader_ = Shaders::PhongGL{Shaders::PhongGL::Configuration{}.setLightCount(2)};
+    shader_.setLightPositions({{5.0f, 5.0f, 7.0f, 0.0f}, {-5.0f, 5.0f, 7.0f, 0.0f}})
+           .setLightColors({0xffffff_rgbf, 0xffffff_rgbf})
+           .setSpecularColor(0x222222_rgbf)
            .setShininess(80.0f);
 
     // Camera object
