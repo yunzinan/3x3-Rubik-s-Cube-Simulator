@@ -21,6 +21,7 @@ ArcBallCamera::ArcBallCamera(
     , camera_{camera}
     , target_{target}
     , distance_{distance}
+    , initialDistance_{distance}
     , windowSize_{windowSize}
 {
     updateTransform();
@@ -57,6 +58,14 @@ void ArcBallCamera::pan(const Vector2i& delta) {
 
     panOffset_.x() -= Float(delta.x()) * worldPerPixel;
     panOffset_.y() += Float(delta.y()) * worldPerPixel;
+    updateTransform();
+}
+
+void ArcBallCamera::resetView() {
+    azimuth_ = 0.0f;
+    elevation_ = 0.3f;
+    distance_ = initialDistance_;
+    panOffset_ = Vector2{0.0f};
     updateTransform();
 }
 

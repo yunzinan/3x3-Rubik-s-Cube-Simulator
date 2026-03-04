@@ -123,29 +123,26 @@ cmake --build .
 
 #### 4. 定位构建产物
 
-编译完成后，产物可能在以下位置之一（取决于 CMake 生成器）：
+**注意：** 只执行 `emcmake cmake` 是**配置**，不会生成网页。必须再执行**编译**后才有 HTML/JS/WASM：
 
-- `build-web/Release/bin/`
-- `build-web/src/`
-- 或直接在 `build-web/` 下
+```bash
+cd build-web
+cmake --build .
+```
 
-需要的文件包括：
+编译完成后，产物在 **`build-web/bin/`** 目录下：
 
 - `RubiksCubeWeb.html` — 入口页面
 - `RubiksCubeWeb.js` — 胶水脚本
 - `RubiksCubeWeb.wasm` — WebAssembly 模块
 - `RubiksCubeWeb.data` — 预加载资源（含 `sequence.json`）
 
-若不确定，可在 `build-web` 下执行：`find . -name "RubiksCubeWeb.html"` 找到 HTML 所在目录。
-
 #### 5. 启动本地 HTTP 服务并在浏览器中打开
 
 WASM 必须通过 HTTP(S) 加载，不能直接双击 `.html` 文件。在**产物所在目录**启动本地服务器：
 
 ```bash
-# 进入产物目录（根据上一步结果二选一或按实际路径调整）
-cd build-web/Release/bin
-# 或：cd build-web/src
+cd build-web/bin
 
 # 使用 Emscripten 自带的 HTTP 服务（需已 source emsdk_env.sh）
 emrun --no_browser --port 8080 .
@@ -162,7 +159,7 @@ emrun --no_browser --port 8080 .
 若未使用 `emrun`，可在产物目录下用 Python 启动简单 HTTP 服务：
 
 ```bash
-cd build-web/Release/bin   # 或你的产物目录
+cd build-web/bin
 python3 -m http.server 8080
 # 然后访问 http://localhost:8080/RubiksCubeWeb.html
 ```
@@ -194,7 +191,7 @@ emcmake cmake -DBUILD_DESKTOP_APP=OFF -DBUILD_WEB_APP=ON ..
 cmake --build .
 ```
 
-Locate the output (e.g. `build-web/Release/bin/` or `build-web/src/`), then serve that directory over HTTP (e.g. `emrun --no_browser --port 8080 .`) and open **http://localhost:8080/RubiksCubeWeb.html** in the browser.
+The output is in `build-web/bin/`. From that directory run `emrun --no_browser --port 8080 .`, then open **http://localhost:8080/RubiksCubeWeb.html** in the browser.
 
 ## Features
 

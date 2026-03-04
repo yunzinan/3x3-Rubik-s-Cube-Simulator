@@ -102,4 +102,8 @@ void CubeScene::reshape(const Vector2i& windowSize) {
     arcBall_->reshape(windowSize);
 }
 
+void CubeScene::resetView() {
+    arcBall_->resetView();
+}
+
 } // namespace rubik

@@ -14,6 +14,7 @@ class ImGuiUI {
 public:
     // ── Callbacks (set by the application) ──────────────────────────────
     std::function<void()>              onReset;
+    std::function<void()>              onResetView;
     std::function<void()>              onUndo;
     std::function<void()>              onRedo;
     std::function<void(const std::string&)> onLoadFile;

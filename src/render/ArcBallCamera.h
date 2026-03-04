@@ -31,6 +31,9 @@ public:
     // Pan: delta in screen pixels
     void pan(const Magnum::Vector2i& delta);
 
+    // Reset camera to default orbit (azimuth=0, elevation=0.3, distance=initial, no pan)
+    void resetView();
+
     void updateTransform();
 
     Magnum::SceneGraph::Camera3D& camera() { return camera_; }
@@ -41,6 +44,7 @@ private:
 
     Magnum::Vector3 target_;  // orbit center (cube center), never changed by pan
     float distance_;
+    float initialDistance_;  // used by resetView()
     float azimuth_   = 0.0f; // horizontal angle (radians)
     float elevation_ = 0.3f; // vertical angle (radians)
     Magnum::Vector2 panOffset_{0.0f}; // pan in view plane (right, up), so rotation stays around target_

@@ -41,6 +41,9 @@ public:
     void draw();
     void reshape(const Magnum::Vector2i& windowSize);
 
+    // Reset camera to default view (orbit and zoom).
+    void resetView();
+
     ArcBallCamera& arcBall() { return *arcBall_; }
 
 private:

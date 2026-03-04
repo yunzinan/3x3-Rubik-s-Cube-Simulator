@@ -87,6 +87,11 @@ DesktopApp::DesktopApp(const Arguments& arguments)
         LOG_INFO("Cube reset");
     };
 
+    ui_.onResetView = [this]() {
+        cubeScene_.resetView();
+        LOG_INFO("View reset");
+    };
+
     ui_.onUndo = [this]() { doUndo(); };
     ui_.onRedo = [this]() { doRedo(); };
 

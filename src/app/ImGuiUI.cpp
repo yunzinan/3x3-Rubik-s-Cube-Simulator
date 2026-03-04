@@ -23,6 +23,11 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
     }
 
     ImGui::SameLine();
+    if (ImGui::Button("Reset View")) {
+        if (onResetView) onResetView();
+    }
+
+    ImGui::SameLine();
     ImGui::BeginDisabled(isAnimating || !history.canUndo());
     if (ImGui::Button("Undo (Ctrl+Z)")) {
         if (onUndo) onUndo();
@@ -89,6 +94,7 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
     ImGui::BulletText("Left drag  -- orbit / rotate view");
     ImGui::BulletText("Shift+Left or Right drag  -- pan view");
     ImGui::BulletText("Scroll wheel  -- zoom in / out");
+    ImGui::BulletText("Reset View button  -- restore default camera");
     ImGui::End();
 }
 

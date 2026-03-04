@@ -69,7 +69,9 @@ if(BUILD_DESKTOP_APP)
         ${DESKTOP_APP_SOURCES}
     )
 
-    target_include_directories(RubiksCube PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(RubiksCube PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/render)
     if(SDL2_MIXER_FOUND)
         target_compile_definitions(RubiksCube PRIVATE RUBIK_HAVE_SDL2_MIXER=1)
         if(DEFINED SDL2_MIXER_LIBRARY)
@@ -137,7 +139,14 @@ if(BUILD_WEB_APP)
         ${WEB_APP_SOURCES}
     )
 
-    target_include_directories(RubiksCubeWeb PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    # 将网页产物统一输出到 build-web/bin，便于查找和用 emrun 托管
+    set_target_properties(RubiksCubeWeb PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        SUFFIX ".html")
+
+    target_include_directories(RubiksCubeWeb PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/render)
 
     # Silence deprecation warnings from Magnum EmscriptenApplication (uses old __EMSCRIPTEN_* macros)
     target_compile_options(RubiksCubeWeb PRIVATE -Wno-deprecated-pragma)
@@ -180,5 +189,4 @@ if(BUILD_WEB_APP)
         )
     endif()
 
-    set_target_properties(RubiksCubeWeb PROPERTIES SUFFIX ".html")
 endif()

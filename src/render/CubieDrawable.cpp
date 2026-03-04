@@ -1,4 +1,4 @@
-#include "render/CubieDrawable.h"
+#include "CubieDrawable.h"
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Renderer.h>

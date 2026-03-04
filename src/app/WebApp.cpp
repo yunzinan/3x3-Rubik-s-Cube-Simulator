@@ -72,6 +72,11 @@ WebApp::WebApp(const Arguments& arguments)
         LOG_INFO("Cube reset");
     };
 
+    ui_.onResetView = [this]() {
+        cubeScene_.resetView();
+        LOG_INFO("View reset");
+    };
+
     ui_.onUndo = [this]() { doUndo(); };
     ui_.onRedo = [this]() { doRedo(); };
     ui_.setFilePathDefault("/sequence.json");
@@ -195,7 +200,10 @@ void WebApp::keyReleaseEvent(KeyEvent& event) {
 
 void WebApp::pointerPressEvent(PointerEvent& event) {
     audioPlayer_.notifyUserGesture();  // Unlock web audio on first click (browser policy)
-    if (imgui_.handlePointerPressEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
+    imgui_.handlePointerPressEvent(event);
+    // WantCaptureMouse is from previous frame; use current position to avoid UI clicks rotating the cube
+    if (ImGui::GetIO().WantCaptureMouse || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+        return;
 
     if (event.pointer() == Pointer::MouseRight ||
         event.pointer() == Pointer::MouseMiddle) {
@@ -214,7 +222,12 @@ void WebApp::pointerPressEvent(PointerEvent& event) {
 }
 
 void WebApp::pointerReleaseEvent(PointerEvent& event) {
-    if (imgui_.handlePointerReleaseEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
+    imgui_.handlePointerReleaseEvent(event);
+    if (ImGui::GetIO().WantCaptureMouse ||
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+        dragButton_ = DragButton::None;  // clear so next move does not rotate
+        return;
+    }
 
     const bool releasingActiveButton =
         (event.pointer() == Pointer::MouseLeft  && dragButton_ == DragButton::Left) ||
@@ -227,7 +240,10 @@ void WebApp::pointerReleaseEvent(PointerEvent& event) {
 }
 
 void WebApp::pointerMoveEvent(PointerMoveEvent& event) {
-    if (imgui_.handlePointerMoveEvent(event) && ImGui::GetIO().WantCaptureMouse) return;
+    imgui_.handlePointerMoveEvent(event);
+    if (ImGui::GetIO().WantCaptureMouse ||
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
+        return;
 
     if (dragButton_ == DragButton::None) return;
 
