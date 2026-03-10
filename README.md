@@ -1,5 +1,8 @@
 # 3x3-Rubik-s-Cube-Simulator
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yunzinan/3x3-Rubik-s-Cube-Simulator)
+
+
 ![Web App Demo](docs/preview.gif)
 
 A 3×3 Rubik's Cube simulator implemented in Modern C++, supporting both Desktop and Web applications.
