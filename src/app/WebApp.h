@@ -5,12 +5,14 @@
 #include "audio/AudioPlayer.h"
 #include "core/CubeState.h"
 #include "core/History.h"
+#include "core/Move.h"
 #include "render/CubeScene.h"
 
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/ImGuiIntegration/Context.h>
 #include <Magnum/Platform/EmscriptenApplication.h>
 #include <Magnum/Timeline.h>
+#include <vector>
 
 namespace rubik {
 
@@ -39,6 +41,9 @@ private:
     void tryEnqueueMove(Move move);
     void doUndo();
     void doRedo();
+    void doAutoPlay();
+    void doGoNext();
+    void doGoBack();
 
     CubeState cubeState_;
     History   history_;
@@ -50,6 +55,9 @@ private:
 
     Magnum::ImGuiIntegration::Context imgui_{Magnum::NoCreate};
     Magnum::Timeline timeline_;
+
+    std::vector<Move> pendingMoves_;
+    int               pendingIndex_ = 0;
 
     DragButton dragButton_ = DragButton::None;
     Magnum::Vector2i lastMousePos_;

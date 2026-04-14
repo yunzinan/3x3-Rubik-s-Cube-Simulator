@@ -83,6 +83,8 @@ DesktopApp::DesktopApp(const Arguments& arguments)
         animManager_.reset();
         cubeState_.reset();
         history_.clear();
+        pendingMoves_.clear();
+        pendingIndex_ = 0;
         cubeScene_.syncFromState(cubeState_);
         LOG_INFO("Cube reset");
     };
@@ -98,10 +100,16 @@ DesktopApp::DesktopApp(const Arguments& arguments)
     ui_.onLoadFile = [this](const std::string& path) {
         auto moves = FileIO::loadControlSequence(path);
         if (!moves.empty()) {
-            animManager_.enqueueSequence(moves);
-            for (auto& m : moves) history_.push(m);
+            pendingMoves_ = std::move(moves);
+            pendingIndex_ = 0;
+            LOG_INFO("Loaded sequence: {} moves (use Auto-Play or Next Step to execute)",
+                     pendingMoves_.size());
         }
     };
+
+    ui_.onAutoPlay = [this]() { doAutoPlay(); };
+    ui_.onGoNext   = [this]() { doGoNext(); };
+    ui_.onGoBack   = [this]() { doGoBack(); };
 
     ui_.onSaveFile = [this](const std::string& path) {
         std::vector<Move> executed(history_.moves().begin(),
@@ -112,6 +120,8 @@ DesktopApp::DesktopApp(const Arguments& arguments)
     ui_.onClearSequence = [this]() {
         animManager_.reset();
         history_.clear();
+        pendingMoves_.clear();
+        pendingIndex_ = 0;
         LOG_INFO("Sequence cleared");
     };
 
@@ -135,7 +145,8 @@ void DesktopApp::drawEvent() {
     cubeScene_.draw();
 
     imgui_.newFrame();
-    ui_.draw(history_, animManager_.isAnimating(), animManager_.moveDuration);
+    ui_.draw(history_, animManager_.isAnimating(), animManager_.moveDuration,
+             pendingIndex_, static_cast<int>(pendingMoves_.size()));
     imgui_.updateApplicationCursor(*this);
     GL::Renderer::setBlendEquation(GL::Renderer::BlendEquation::Add,
                                    GL::Renderer::BlendEquation::Add);
@@ -293,6 +304,40 @@ void DesktopApp::doRedo() {
     if (auto m = history_.redo()) {
         animManager_.enqueueMove(*m);
     }
+}
+
+void DesktopApp::doAutoPlay() {
+    if (animManager_.isAnimating()) return;
+    if (pendingIndex_ >= static_cast<int>(pendingMoves_.size())) return;
+
+    const int remaining = static_cast<int>(pendingMoves_.size()) - pendingIndex_;
+    std::vector<Move> toPlay(pendingMoves_.begin() + pendingIndex_, pendingMoves_.end());
+    for (auto& m : toPlay) history_.push(m);
+    animManager_.enqueueSequence(toPlay);
+    pendingIndex_ += remaining;
+    LOG_INFO("Auto-Play: enqueueing {} moves", remaining);
+}
+
+void DesktopApp::doGoNext() {
+    if (animManager_.isAnimating()) return;
+    if (pendingIndex_ >= static_cast<int>(pendingMoves_.size())) return;
+
+    Move m = pendingMoves_[pendingIndex_];
+    history_.push(m);
+    animManager_.enqueueMove(m);
+    ++pendingIndex_;
+    LOG_DEBUG("Go Next: {}", m.toChar());
+}
+
+void DesktopApp::doGoBack() {
+    if (animManager_.isAnimating()) return;
+    if (pendingIndex_ <= 0) return;
+
+    --pendingIndex_;
+    if (auto inv = history_.undo()) {
+        animManager_.enqueueMove(*inv);
+    }
+    LOG_DEBUG("Go Back: pendingIndex={}", pendingIndex_);
 }
 
 } // namespace rubik

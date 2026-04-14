@@ -11,7 +11,8 @@ void ImGuiUI::setFilePathDefault(const std::string& path) {
     filePathBuf_[maxLen] = '\0';
 }
 
-void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/) {
+void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/,
+                   int pendingCursor, int pendingTotal) {
     ImGui::SetNextWindowPos({10, 10}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize({320, 0}, ImGuiCond_FirstUseEver);
 
@@ -67,10 +68,37 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
     }
     ImGui::EndDisabled();
 
+    // --- Playback controls ---
+    ImGui::Separator();
+
+    const bool hasPending = pendingCursor < pendingTotal;
+    const bool hasExecuted = pendingCursor > 0;
+
+    ImGui::BeginDisabled(isAnimating || !hasPending);
+    if (ImGui::Button("Auto-Play")) {
+        if (onAutoPlay) onAutoPlay();
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    ImGui::BeginDisabled(isAnimating || !hasPending);
+    if (ImGui::Button("Go Next")) {
+        if (onGoNext) onGoNext();
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    ImGui::BeginDisabled(isAnimating || !hasExecuted);
+    if (ImGui::Button("Go Back")) {
+        if (onGoBack) onGoBack();
+    }
+    ImGui::EndDisabled();
+
     // --- Status ---
     ImGui::Separator();
-    ImGui::Text("Moves: %d / %d", history.cursor(),
+    ImGui::Text("Executed: %d / %d", history.cursor(),
                 static_cast<int>(history.moves().size()));
+    ImGui::Text("Pending:  %d / %d", pendingCursor, pendingTotal);
     ImGui::Text("State: %s", isAnimating ? "Moving" : "Idle");
 
     ImGui::End();

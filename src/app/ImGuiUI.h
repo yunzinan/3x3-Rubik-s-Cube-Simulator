@@ -20,10 +20,15 @@ public:
     std::function<void(const std::string&)> onLoadFile;
     std::function<void(const std::string&)> onSaveFile;
     std::function<void()> onClearSequence;
+    std::function<void()> onAutoPlay;   // Play all remaining pending moves
+    std::function<void()> onGoNext;     // Play one pending move
+    std::function<void()> onGoBack;     // Undo the last executed pending move
 
     // Draw all ImGui windows. Call between imgui.newFrame() and
     // imgui.drawFrame().
-    void draw(const History& history, bool isAnimating, float animSpeed);
+    // pendingCursor / pendingTotal describe the loaded-but-not-yet-played sequence.
+    void draw(const History& history, bool isAnimating, float animSpeed,
+              int pendingCursor, int pendingTotal);
 
     void setFilePathDefault(const std::string& path);
 
