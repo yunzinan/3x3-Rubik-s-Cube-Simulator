@@ -72,3 +72,5 @@ _deps/
 *.tmp
 *.temp
 .cache/
+report
+docs/*.pdf
