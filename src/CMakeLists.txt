@@ -19,6 +19,11 @@ set(ANIMATION_SOURCES
     animation/AnimationManager.h   animation/AnimationManager.cpp
 )
 
+# Solver
+set(SOLVER_SOURCES
+    solver/Solver.h   solver/Solver.cpp
+)
+
 # Audio (move sound effect)
 set(AUDIO_SOURCES
     audio/AudioPlayer.h   audio/AudioPlayer.cpp
@@ -63,6 +68,7 @@ if(BUILD_DESKTOP_APP)
         ${CORE_SOURCES}
         ${RENDER_SOURCES}
         ${ANIMATION_SOURCES}
+        ${SOLVER_SOURCES}
         ${AUDIO_SOURCES}
         ${UTILS_SOURCES}
         ${APP_COMMON_SOURCES}
@@ -133,6 +139,7 @@ if(BUILD_WEB_APP)
         ${CORE_SOURCES}
         ${RENDER_SOURCES}
         ${ANIMATION_SOURCES}
+        ${SOLVER_SOURCES}
         ${AUDIO_SOURCES}
         ${UTILS_SOURCES}
         ${APP_COMMON_SOURCES}
@@ -189,4 +196,46 @@ if(BUILD_WEB_APP)
         )
     endif()
 
+endif()
+
+# ── Tests ───────────────────────────────────────────────────────────────────
+
+if(BUILD_TESTS)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+    add_executable(test_solver
+        ${CMAKE_SOURCE_DIR}/tests/test_solver.cpp
+        ${CORE_SOURCES}
+        ${SOLVER_SOURCES}
+        ${UTILS_SOURCES}
+    )
+    target_include_directories(test_solver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(test_solver PRIVATE
+        Corrade::Utility
+        Magnum::Magnum
+        spdlog::spdlog
+        nlohmann_json::nlohmann_json
+    )
+    add_test(NAME solver_harness COMMAND test_solver)
+    set_tests_properties(solver_harness PROPERTIES LABELS rubiks)
+
+    add_executable(solver_cli
+        ${CMAKE_SOURCE_DIR}/tests/solver_cli.cpp
+        ${CORE_SOURCES}
+        ${SOLVER_SOURCES}
+        ${UTILS_SOURCES}
+    )
+    target_include_directories(solver_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(solver_cli PRIVATE
+        Corrade::Utility
+        Magnum::Magnum
+        spdlog::spdlog
+        nlohmann_json::nlohmann_json
+    )
+
+    add_test(
+        NAME python_solver_tests
+        COMMAND ${Python3_EXECUTABLE} -m unittest discover -s ${CMAKE_SOURCE_DIR}/test
+    )
+    set_tests_properties(python_solver_tests PROPERTIES LABELS rubiks)
 endif()

@@ -83,6 +83,24 @@ float CubeState::angleForDirection(Direction dir) {
     return float(dir == Direction::CW ? -90.0_degf : 90.0_degf);
 }
 
+bool CubeState::isSolved() const {
+    for (const auto& c : cubies_) {
+        if (c.position != c.homePosition) return false;
+        const int nonzero = (c.homePosition.x() != 0) +
+                            (c.homePosition.y() != 0) +
+                            (c.homePosition.z() != 0);
+        if (nonzero < 2) continue; // skip centers
+        const Matrix3 rot3 = c.rotation.rotationScaling();
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                const float expected = (i == j) ? 1.0f : 0.0f;
+                if (std::abs(rot3[i][j] - expected) > 1e-3f) return false;
+            }
+        }
+    }
+    return true;
+}
+
 void CubeState::applyMove(Move move) {
     auto indices = cubiesOnFace(move.face);
     Vector3 axis = axisForFace(move.face);

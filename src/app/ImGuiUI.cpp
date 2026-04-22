@@ -47,6 +47,19 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
 
     ImGui::Separator();
 
+    // --- Scramble & Solve ---
+    ImGui::BeginDisabled(isAnimating);
+    if (ImGui::Button("Scramble")) {
+        if (onScramble) onScramble();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Solve!")) {
+        if (onSolve) onSolve();
+    }
+    ImGui::EndDisabled();
+
+    ImGui::Separator();
+
     // --- File I/O ---
     ImGui::InputText("File", filePathBuf_, sizeof(filePathBuf_));
 
@@ -82,14 +95,14 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
 
     ImGui::SameLine();
     ImGui::BeginDisabled(isAnimating || !hasPending);
-    if (ImGui::Button("Go Next")) {
+    if (ImGui::Button("Go Next (N)")) {
         if (onGoNext) onGoNext();
     }
     ImGui::EndDisabled();
 
     ImGui::SameLine();
     ImGui::BeginDisabled(isAnimating || !hasExecuted);
-    if (ImGui::Button("Go Back")) {
+    if (ImGui::Button("Go Back (P)")) {
         if (onGoBack) onGoBack();
     }
     ImGui::EndDisabled();
@@ -117,6 +130,8 @@ void ImGuiUI::draw(const History& history, bool isAnimating, float /*animSpeed*/
     ImGui::BulletText("Shift + key  -- rotate face counterclockwise");
     ImGui::BulletText("Ctrl+Z  -- Undo");
     ImGui::BulletText("Ctrl+Y  -- Redo");
+    ImGui::BulletText("N  -- Go Next");
+    ImGui::BulletText("P  -- Go Back");
     ImGui::Spacing();
     ImGui::TextWrapped("View (camera):");
     ImGui::BulletText("Left drag  -- orbit / rotate view");

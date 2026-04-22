@@ -44,6 +44,8 @@ private:
     void doAutoPlay();
     void doGoNext();
     void doGoBack();
+    void doScramble();
+    void doSolve();
 
     CubeState cubeState_;
     History   history_;
@@ -58,6 +60,7 @@ private:
 
     std::vector<Move> pendingMoves_;
     int               pendingIndex_ = 0;
+    int               scrambleRemaining_ = 0;
 
     DragButton dragButton_ = DragButton::None;
     Magnum::Vector2i lastMousePos_;

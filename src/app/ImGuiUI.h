@@ -23,6 +23,8 @@ public:
     std::function<void()> onAutoPlay;   // Play all remaining pending moves
     std::function<void()> onGoNext;     // Play one pending move
     std::function<void()> onGoBack;     // Undo the last executed pending move
+    std::function<void()> onScramble;   // Generate a random scramble
+    std::function<void()> onSolve;      // Compute a solution for the current state
 
     // Draw all ImGui windows. Call between imgui.newFrame() and
     // imgui.drawFrame().

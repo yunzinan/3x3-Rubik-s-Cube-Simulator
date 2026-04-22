@@ -27,6 +27,11 @@ public:
     void applyMove(Move move);
     void reset();
 
+    // Visually solved: all cubies at home position, corners and edges with
+    // identity orientation. Center rotation is ignored (center stickers are
+    // on the rotation axis so their rotation is not visible).
+    bool isSolved() const;
+
     const std::array<CubieInfo, kCubieCount>& cubies() const { return cubies_; }
 
     // Return indices (into cubies_) of the 9 cubies sitting on `face`.

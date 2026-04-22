@@ -1,8 +1,10 @@
 #include "app/WebApp.h"
+#include "solver/Solver.h"
 #include "utils/FileIO.h"
 #include "utils/Logger.h"
 
 #include <algorithm>
+#include <random>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
@@ -61,6 +63,7 @@ WebApp::WebApp(const Arguments& arguments)
     animManager_.onMoveComplete = [this](Move m) {
         cubeState_.applyMove(m);
         cubeScene_.endFaceRotation(cubeState_);
+        if (scrambleRemaining_ > 0) --scrambleRemaining_;
         LOG_DEBUG("Animation complete: {}", m.toChar());
     };
 
@@ -96,6 +99,8 @@ WebApp::WebApp(const Arguments& arguments)
     ui_.onAutoPlay = [this]() { doAutoPlay(); };
     ui_.onGoNext   = [this]() { doGoNext(); };
     ui_.onGoBack   = [this]() { doGoBack(); };
+    ui_.onScramble = [this]() { doScramble(); };
+    ui_.onSolve    = [this]() { doSolve(); };
 
     ui_.onSaveFile = [this](const std::string& path) {
         std::vector<Move> executed(history_.moves().begin(),
@@ -119,7 +124,7 @@ void WebApp::drawEvent() {
                                   GL::FramebufferClear::Depth);
 
     const float dt = timeline_.previousFrameDuration();
-    animManager_.moveDuration = ui_.animationSpeed();
+    animManager_.moveDuration = (scrambleRemaining_ > 0) ? 0.05f : ui_.animationSpeed();
     animManager_.update(dt);
 
     if (auto m = animManager_.currentMove()) {
@@ -181,6 +186,16 @@ void WebApp::keyPressEvent(KeyEvent& event) {
     }
     if (event.key() == Key::Minus) {
         cubeScene_.arcBall().zoom(-1.0f);
+        event.setAccepted();
+        return;
+    }
+    if (!shortcutHeld && event.key() == Key::N) {
+        doGoNext();
+        event.setAccepted();
+        return;
+    }
+    if (!shortcutHeld && event.key() == Key::P) {
+        doGoBack();
         event.setAccepted();
         return;
     }
@@ -341,6 +356,61 @@ void WebApp::doGoBack() {
         animManager_.enqueueMove(*inv);
     }
     LOG_DEBUG("Go Back: pendingIndex={}", pendingIndex_);
+}
+
+void WebApp::doScramble() {
+    if (animManager_.isAnimating()) return;
+
+    pendingMoves_.clear();
+    pendingIndex_ = 0;
+
+    static std::mt19937 rng{std::random_device{}()};
+    std::uniform_int_distribution<int> faceDist(0, 5);
+    std::uniform_int_distribution<int> dirDist(0, 1);
+    static const Face faces[] = {Face::F, Face::B, Face::U, Face::D, Face::L, Face::R};
+
+    constexpr int kScrambleLen = 30;
+    std::vector<Move> moves;
+    moves.reserve(kScrambleLen);
+    Face lastFace = Face::F;
+    bool hasLast = false;
+    for (int i = 0; i < kScrambleLen; ++i) {
+        Face f;
+        do { f = faces[faceDist(rng)]; } while (hasLast && f == lastFace);
+        Direction d = dirDist(rng) ? Direction::CW : Direction::CCW;
+        moves.push_back(Move{f, d});
+        lastFace = f;
+        hasLast = true;
+    }
+
+    for (const auto& m : moves) history_.push(m);
+    animManager_.enqueueSequence(moves);
+    scrambleRemaining_ = static_cast<int>(moves.size());
+    LOG_INFO("Scramble: enqueueing {} moves", moves.size());
+}
+
+void WebApp::doSolve() {
+    if (animManager_.isAnimating()) return;
+
+    if (cubeState_.isSolved()) {
+        pendingMoves_.clear();
+        pendingIndex_ = 0;
+        LOG_INFO("Solve: cube already solved");
+        return;
+    }
+
+    auto report = Solver::solveWithReport(cubeState_);
+    if (!report.solved) {
+        pendingMoves_.clear();
+        pendingIndex_ = 0;
+        LOG_WARN("Solver failed to reach a solved state; refusing to enqueue partial sequence");
+        return;
+    }
+
+    pendingMoves_ = std::move(report.moves);
+    pendingIndex_ = 0;
+    LOG_INFO("Solver produced {} moves (use Auto-Play or Go Next to execute)",
+             pendingMoves_.size());
 }
 
 } // namespace rubik

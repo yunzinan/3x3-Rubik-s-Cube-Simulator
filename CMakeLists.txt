@@ -14,6 +14,10 @@ option(BUILD_DESKTOP_APP "Build the SDL2 desktop application" ON)
 option(BUILD_WEB_APP    "Build the Emscripten web application" OFF)
 option(BUILD_TESTS      "Build unit tests" OFF)
 
+if(BUILD_TESTS)
+    enable_testing()
+endif()
+
 # Validate toolchain early, before fetching dependencies.
 # Accept when either system is Emscripten or the Emscripten toolchain file is
 # in use (avoids false failure when re-running emcmake in a dir first configured with native cmake).
