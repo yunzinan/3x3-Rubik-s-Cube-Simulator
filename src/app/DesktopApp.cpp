@@ -116,6 +116,17 @@ DesktopApp::DesktopApp(const Arguments& arguments)
     ui_.onScramble = [this]() { doScramble(); };
     ui_.onSolve    = [this]() { doSolve(); };
 
+    ui_.onApplyStateInput = [this](const FaceletColor facelets[6][9]) -> bool {
+        if (animManager_.isAnimating()) return false;
+        if (!cubeState_.applyFaceletInput(facelets)) return false;
+        history_.clear();
+        pendingMoves_.clear();
+        pendingIndex_ = 0;
+        cubeScene_.rebuildFromState(cubeState_);
+        LOG_INFO("Applied facelet input state");
+        return true;
+    };
+
     ui_.onSaveFile = [this](const std::string& path) {
         std::vector<Move> executed(history_.moves().begin(),
                                    history_.moves().begin() + history_.cursor());

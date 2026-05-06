@@ -26,6 +26,13 @@ public:
     // a move is fully applied, i.e. when *not* animating).
     void syncFromState(const CubeState& state);
 
+    // Destroy and recreate all 26 cubie objects with correct sticker colors
+    // for the given state (used after facelet input).
+    void rebuildFromState(const CubeState& state);
+
+    // Update sticker colors on existing cubies from facelet input.
+    void setFaceletColors(const CubeState& state, const FaceletColor facelets[6][9]);
+
     // --- Animation helpers ---
 
     // Before animating: attach the 9 cubies of `face` to the rotation group.
@@ -54,6 +61,9 @@ private:
 
     Object3D* cubeRoot_ = nullptr;
     Object3D* rotationGroup_ = nullptr;
+
+    void createCubies(const CubeState& state);
+    void destroyCubies();
 
     Magnum::Shaders::PhongGL shader_{Magnum::NoCreate};
     Magnum::SceneGraph::DrawableGroup3D drawables_;

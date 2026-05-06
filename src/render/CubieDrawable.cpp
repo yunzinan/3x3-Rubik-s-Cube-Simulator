@@ -330,13 +330,19 @@ CubieDrawable::CubieDrawable(
 
 void CubieDrawable::buildMeshes(Vector3i homePos) {
     bodyMesh_ = buildBodyMesh();
+    // Always build all 6 sticker meshes so setFaceColors can toggle visibility.
     for (int i = 0; i < 6; ++i) {
-        if (isExposedFace(i, homePos)) {
-            stickers_[i].mesh       = buildStickerMesh(i);
-            stickers_[i].borderMesh = buildStickerBorderMesh(i);
-            stickers_[i].color      = faceColor(i, homePos);
-            stickers_[i].visible    = true;
-        }
+        stickers_[i].mesh       = buildStickerMesh(i);
+        stickers_[i].borderMesh = buildStickerBorderMesh(i);
+        stickers_[i].color      = faceColor(i, homePos);
+        stickers_[i].visible    = isExposedFace(i, homePos);
+    }
+}
+
+void CubieDrawable::setFaceColors(const Color3 colors[6], const bool visible[6]) {
+    for (int i = 0; i < 6; ++i) {
+        stickers_[i].color   = colors[i];
+        stickers_[i].visible = visible[i];
     }
 }
 

@@ -38,6 +38,10 @@ public:
         Magnum::SceneGraph::DrawableGroup3D& drawables,
         Magnum::Vector3i homePos);
 
+    // Override sticker colors and visibility (used by state-input feature).
+    // faceIdx: 0=+X, 1=-X, 2=+Y, 3=-Y, 4=+Z, 5=-Z
+    void setFaceColors(const Magnum::Color3 colors[6], const bool visible[6]);
+
 private:
     void draw(const Magnum::Matrix4& transformationMatrix,
               Magnum::SceneGraph::Camera3D& camera) override;

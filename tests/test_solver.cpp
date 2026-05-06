@@ -44,6 +44,28 @@ void applySeq(CubeState& state, const char* seq) {
     }
 }
 
+bool sameFacelets(const FaceletColor a[6][9], const FaceletColor b[6][9]) {
+    for (int f = 0; f < 6; ++f)
+        for (int s = 0; s < 9; ++s)
+            if (a[f][s] != b[f][s]) return false;
+    return true;
+}
+
+bool hasNineOfEachColor(const FaceletColor facelets[6][9]) {
+    int counts[6] = {};
+    for (int f = 0; f < 6; ++f)
+        for (int s = 0; s < 9; ++s)
+            ++counts[int(facelets[f][s])];
+    for (int i = 0; i < 6; ++i) {
+        if (counts[i] != 9) {
+            for (int j = 0; j < 6; ++j)
+                std::printf("facelet color %d count: %d\n", j, counts[j]);
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -68,6 +90,27 @@ int main() {
         CubeState state;
         auto scramble = randomScramble(rng, kScrambLen);
         for (auto m : scramble) state.applyMove(m);
+
+        FaceletColor facelets[6][9];
+        state.toFacelets(facelets);
+        if (!hasNineOfEachColor(facelets)) {
+            std::printf("facelet export produced invalid counts for scramble: %s\n",
+                        movesToString(scramble).c_str());
+            return 1;
+        }
+        CubeState reconstructed;
+        if (!reconstructed.applyFaceletInput(facelets)) {
+            std::printf("facelet reconstruction rejected scramble: %s\n",
+                        movesToString(scramble).c_str());
+            return 1;
+        }
+        FaceletColor roundTrip[6][9];
+        reconstructed.toFacelets(roundTrip);
+        if (!sameFacelets(facelets, roundTrip)) {
+            std::printf("facelet reconstruction changed scramble: %s\n",
+                        movesToString(scramble).c_str());
+            return 1;
+        }
 
         auto report = Solver::solveWithReport(state);
 
