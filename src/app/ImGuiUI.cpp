@@ -70,7 +70,7 @@ void ImGuiUI::initInputFacelets() {
 void ImGuiUI::drawInputStatePanel(bool isAnimating) {
     if (!showInputPanel_) return;
 
-    ImGui::SetNextWindowSize({460, 580}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({530, 580}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Input Cube State", &showInputPanel_);
 
     ImGui::TextWrapped("Select a color, then click stickers to paint them.");
@@ -112,6 +112,8 @@ void ImGuiUI::drawInputStatePanel(bool isAnimating) {
     // ── Cross layout ──
     constexpr float stickerSize = 28.0f;
     constexpr float gap = 2.0f;
+    constexpr float facePadding = 5.0f;
+    constexpr float faceRounding = 6.0f;
     ImVec2 base = ImGui::GetCursorScreenPos();
 
     auto stickerScreenPos = [&](int faceIdx, int sticker) -> ImVec2 {
@@ -122,7 +124,21 @@ void ImGuiUI::drawInputStatePanel(bool isAnimating) {
                 base.y + gRow * (stickerSize + gap)};
     };
 
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    for (int f = 0; f < 6; ++f) {
+        ImVec2 faceMin = stickerScreenPos(f, 0);
+        ImVec2 faceMax = stickerScreenPos(f, 8);
+        faceMin.x -= facePadding;
+        faceMin.y -= facePadding;
+        faceMax.x += stickerSize + facePadding;
+        faceMax.y += stickerSize + facePadding;
+        drawList->AddRectFilled(faceMin, faceMax, IM_COL32(22, 24, 28, 55), faceRounding);
+        drawList->AddRect(faceMin, faceMax, IM_COL32(255, 255, 255, 35), faceRounding);
+    }
+
     // Draw all 54 stickers.
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
     for (int f = 0; f < 6; ++f) {
         for (int s = 0; s < 9; ++s) {
             ImVec2 pos = stickerScreenPos(f, s);
@@ -130,15 +146,17 @@ void ImGuiUI::drawInputStatePanel(bool isAnimating) {
             ImGui::PushStyleColor(ImGuiCol_Button,         faceletColorToImU32(inputFacelets_[f][s]));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  faceletHoverColor(inputFacelets_[f][s]));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive,   faceletActiveColor(inputFacelets_[f][s]));
+            ImGui::PushStyleColor(ImGuiCol_Border,         IM_COL32(0, 0, 0, 120));
             ImGui::PushID(f * 100 + s);
             char label[8];
             std::snprintf(label, sizeof(label), "##%d%d", f, s);
             if (ImGui::Button(label, {stickerSize, stickerSize}))
                 inputFacelets_[f][s] = selectedColor_;
             ImGui::PopID();
-            ImGui::PopStyleColor(3);
+            ImGui::PopStyleColor(4);
         }
     }
+    ImGui::PopStyleVar(2);
 
     // Advance cursor past the cross layout (11 rows).
     ImGui::SetCursorScreenPos({base.x, base.y + 11 * (stickerSize + gap) + 4});

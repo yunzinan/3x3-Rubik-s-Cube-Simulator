@@ -57,21 +57,21 @@ private:
     void drawInputStatePanel(bool isAnimating);
 
     // ── Cross layout helpers ────────────────────────────────────────────
-    // Face origins in a 11×12 sticker grid (row 0-10, col 0-11).
-    //        col: 0  1  2  3  4  5  6  7  8  9 10 11
-    // row 0-2:                         U  U  U
+    // Face origins in a 11x15 sticker grid (row 0-10, col 0-14).
+    //        col: 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
+    // row 0-2:                            U  U  U
     // row 3:                     (gap)
-    // row 4-6:    L  L  L        F  F  F  R  R  R  B  B  B
+    // row 4-6:    L  L  L     F  F  F     R  R  R     B  B  B
     // row 7:                     (gap)
-    // row 8-10:                   D  D  D
+    // row 8-10:                      D  D  D
     struct GridOrigin { int row, col; };
     static constexpr GridOrigin kFaceGridOrigin[6] = {
-        {0, 3},  // U
-        {8, 3},  // D
-        {4, 3},  // F
-        {4, 9},  // B
+        {0, 4},   // U
+        {8, 4},   // D
+        {4, 4},   // F
+        {4, 12},  // B
         {4, 0},  // L
-        {4, 6},  // R
+        {4, 8},  // R
     };
 };
 
