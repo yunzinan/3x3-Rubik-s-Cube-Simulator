@@ -27,6 +27,7 @@ public:
     std::function<void()> onGoBack;     // Undo the last executed pending move
     std::function<void()> onScramble;   // Generate a random scramble
     std::function<void()> onSolve;      // Compute a solution for the current state
+    std::function<CubeState::FaceletDiagnostic(const FaceletColor[6][9])> onValidateStateInput;
     std::function<bool(const FaceletColor[6][9])> onApplyStateInput;
 
     // Draw all ImGui windows. Call between imgui.newFrame() and
@@ -52,6 +53,7 @@ private:
     FaceletColor inputFacelets_[6][9] = {}; // [face][sticker]
     bool inputInitialized_ = false;
     std::string inputError_;
+    std::array<std::array<bool, 9>, 6> inputHighlights_{};
 
     void initInputFacelets();
     void drawInputStatePanel(bool isAnimating);

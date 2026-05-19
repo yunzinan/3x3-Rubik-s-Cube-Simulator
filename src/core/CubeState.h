@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace rubik {
@@ -40,6 +41,12 @@ class CubeState {
 public:
     CubeState();
 
+    struct FaceletDiagnostic {
+        bool valid = false;
+        std::string message;
+        std::array<std::array<bool, 9>, 6> highlights{};
+    };
+
     void applyMove(Move move);
     void reset();
 
@@ -62,6 +69,11 @@ public:
     // and sticker goes left-to-right, top-to-bottom per face in cross layout.
     // Returns false if the input is invalid (e.g. wrong color counts).
     bool applyFaceletInput(const FaceletColor facelets[6][9]);
+
+    // Validate facelet input without changing this state.  The diagnostic
+    // always contains a user-facing reason when invalid; highlights are best
+    // effort and are populated only when the issue can be localized.
+    FaceletDiagnostic validateFaceletInput(const FaceletColor facelets[6][9]) const;
 
     // Export current logical state as facelet colors using the same layout as
     // applyFaceletInput().

@@ -102,6 +102,25 @@ WebApp::WebApp(const Arguments& arguments)
     ui_.onScramble = [this]() { doScramble(); };
     ui_.onSolve    = [this]() { doSolve(); };
 
+    ui_.onValidateStateInput = [this](const FaceletColor facelets[6][9]) {
+        auto diag = cubeState_.validateFaceletInput(facelets);
+        if (!diag.valid) return diag;
+
+        CubeState probe;
+        if (!probe.applyFaceletInput(facelets)) {
+            diag.valid = false;
+            diag.message = "Invalid cube state.";
+            return diag;
+        }
+
+        auto report = Solver::solveWithReport(probe);
+        if (!report.solved) {
+            diag.valid = false;
+            diag.message = "Invalid or unsupported cube state: solver cannot reach solved state. Check for a flipped edge, twisted corner, or parity mismatch.";
+        }
+        return diag;
+    };
+
     ui_.onApplyStateInput = [this](const FaceletColor facelets[6][9]) -> bool {
         if (animManager_.isAnimating()) return false;
         if (!cubeState_.applyFaceletInput(facelets)) {

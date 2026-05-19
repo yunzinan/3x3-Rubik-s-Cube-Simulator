@@ -291,25 +291,71 @@ void visibleFaces(V3i pos, int outFaces[3], int outStickers[3], int& count) {
     }
 }
 
-} // anonymous namespace
+int visibleStickerCount(V3i pos) {
+    return (pos.x() != 0) + (pos.y() != 0) + (pos.z() != 0);
+}
 
-bool CubeState::applyFaceletInput(const FaceletColor facelets[6][9]) {
-    // Validate: each color must appear exactly 9 times.
+void highlightPosition(CubeState::FaceletDiagnostic& diag, V3i pos) {
+    int faces[3], stickers[3], count = 0;
+    visibleFaces(pos, faces, stickers, count);
+    for (int i = 0; i < count; ++i)
+        diag.highlights[faces[i]][stickers[i]] = true;
+}
+
+void highlightCubie(CubeState::FaceletDiagnostic& diag, const CubieInfo& cubie) {
+    highlightPosition(diag, cubie.position);
+}
+
+int permutationParity(const std::vector<int>& perm) {
+    int inversions = 0;
+    for (std::size_t i = 0; i < perm.size(); ++i)
+        for (std::size_t j = i + 1; j < perm.size(); ++j)
+            if (perm[i] > perm[j]) ++inversions;
+    return inversions & 1;
+}
+
+bool reconstructFacelets(const FaceletColor facelets[6][9],
+                         std::array<CubieInfo, kCubieCount>& next,
+                         CubeState::FaceletDiagnostic* diag) {
+    auto fail = [&](const std::string& message) {
+        if (diag) {
+            diag->valid = false;
+            diag->message = message;
+        }
+        return false;
+    };
+
+    if (diag) {
+        diag->valid = false;
+        diag->message.clear();
+        for (auto& face : diag->highlights)
+            face.fill(false);
+    }
+
     int counts[6] = {};
     for (int f = 0; f < 6; ++f)
         for (int s = 0; s < 9; ++s)
             ++counts[int(facelets[f][s])];
+    bool badCounts = false;
     for (int i = 0; i < 6; ++i)
-        if (counts[i] != 9) return false;
+        if (counts[i] != 9) badCounts = true;
+    if (badCounts) {
+        if (diag) {
+            for (int f = 0; f < 6; ++f)
+                for (int s = 0; s < 9; ++s)
+                    if (counts[int(facelets[f][s])] != 9)
+                        diag->highlights[f][s] = true;
+        }
+        return fail("Each color must appear exactly 9 times.");
+    }
 
     auto cubieMap = buildCubieMap();
-    std::array<CubieInfo, kCubieCount> next = cubies_;
     bool assigned[kCubieCount] = {};
+    V3i assignedAt[kCubieCount] = {};
 
     for (int posIdx = 0; posIdx < kCubieCount; ++posIdx) {
-        V3i pos = cubies_[posIdx].homePosition;
+        V3i pos = next[posIdx].homePosition;
 
-        // Determine which faces this cubie is on and read sticker colors.
         int faceIndices[3], stickerIndices[3], numFaces = 0;
         visibleFaces(pos, faceIndices, stickerIndices, numFaces);
 
@@ -320,7 +366,6 @@ bool CubeState::applyFaceletInput(const FaceletColor facelets[6][9]) {
             worldNormals[i] = faceNormal(faceIndices[i]);
         }
 
-        // Sort colors and their current world normals together.
         for (int i = 1; i < numFaces; ++i) {
             for (int j = i; j > 0 && colors[j] < colors[j-1]; --j) {
                 std::swap(colors[j], colors[j-1]);
@@ -329,23 +374,28 @@ bool CubeState::applyFaceletInput(const FaceletColor facelets[6][9]) {
         }
 
         uint32_t key = colorKey(colors, numFaces);
-
         auto it = cubieMap.find(key);
         if (it == cubieMap.end()) {
+            if (diag) highlightPosition(*diag, pos);
             LOG_WARN("applyFaceletInput FAILED: cubie idx={} pos=({},{},{}) colors={},{},{} key=0x{:x}",
                      posIdx, pos.x(), pos.y(), pos.z(),
                      int(colors[0]), int(colors[1]), int(colors[2]), key);
-            return false; // invalid color combination
+            return fail("Invalid cubie color combination.");
         }
+
         const CubieIdentity& ci = it->second;
         if (assigned[ci.homeIdx]) {
+            if (diag) {
+                highlightPosition(*diag, assignedAt[ci.homeIdx]);
+                highlightPosition(*diag, pos);
+            }
             LOG_WARN("applyFaceletInput FAILED: duplicate cubie homeIdx={} at pos=({},{},{})",
                      ci.homeIdx, pos.x(), pos.y(), pos.z());
-            return false;
+            return fail("Duplicate cubie detected; another cubie is missing.");
         }
         assigned[ci.homeIdx] = true;
+        assignedAt[ci.homeIdx] = pos;
 
-        // Build home direction matrix H: columns = home direction unit vectors.
         V3 homeDirs[3] = {
             V3{float(ci.homeDirections[0].x()),
                float(ci.homeDirections[0].y()),
@@ -367,7 +417,6 @@ bool CubeState::applyFaceletInput(const FaceletColor facelets[6][9]) {
             homeDirs[2] = Magnum::Math::cross(homeDirs[0], homeDirs[1]);
         M3 H = matFromCols(homeDirs[0], homeDirs[1], homeDirs[2]);
 
-        // Build target direction matrix W: columns = world directions from input.
         V3 worldDirs[3] = {
             V3{float(worldNormals[0].x()), float(worldNormals[0].y()), float(worldNormals[0].z())},
             V3{},
@@ -387,37 +436,100 @@ bool CubeState::applyFaceletInput(const FaceletColor facelets[6][9]) {
             worldDirs[2] = Magnum::Math::cross(worldDirs[0], worldDirs[1]);
         M3 W = matFromCols(worldDirs[0], worldDirs[1], worldDirs[2]);
 
-        // R = W * H^T (H is orthonormal, so H^-1 = H^T).
         M3 R = W * H.transposed();
 
-        // Validate: R must be a proper rotation (det ≈ +1).
         float det = R.determinant();
         if (std::abs(det - 1.0f) > 0.1f) {
-            LOG_WARN("applyFaceletInput FAILED: invalid rotation det={} homeIdx={} pos=({},{},{}) "
-                     "homeDet={} worldDet={} homeDirs=({},{},{}),({},{},{}),({},{},{}) worldDirs=({},{},{}),({},{},{}),({},{},{})",
-                     det, ci.homeIdx, pos.x(), pos.y(), pos.z(),
-                     H.determinant(), W.determinant(),
-                     ci.homeDirections[0].x(), ci.homeDirections[0].y(), ci.homeDirections[0].z(),
-                     ci.homeDirections[1].x(), ci.homeDirections[1].y(), ci.homeDirections[1].z(),
-                     ci.homeDirections[2].x(), ci.homeDirections[2].y(), ci.homeDirections[2].z(),
-                     worldNormals[0].x(), worldNormals[0].y(), worldNormals[0].z(),
-                     worldNormals[1].x(), worldNormals[1].y(), worldNormals[1].z(),
-                     worldNormals[2].x(), worldNormals[2].y(), worldNormals[2].z());
-            return false;
+            if (diag) highlightPosition(*diag, pos);
+            LOG_WARN("applyFaceletInput FAILED: invalid rotation det={} homeIdx={} pos=({},{},{})",
+                     det, ci.homeIdx, pos.x(), pos.y(), pos.z());
+            return fail("Invalid cubie orientation.");
         }
 
-        // Store the identified home cubie at this current position.
         next[ci.homeIdx].position = pos;
         next[ci.homeIdx].rotation = Matrix4{R};
     }
+
     for (int i = 0; i < kCubieCount; ++i) {
         if (!assigned[i]) {
             LOG_WARN("applyFaceletInput FAILED: missing cubie homeIdx={}", i);
-            return false;
+            return fail("Missing cubie detected.");
         }
     }
+
+    std::vector<int> edgeSlotToHome(12, -1), cornerSlotToHome(8, -1);
+    int edgeHomeOrder[kCubieCount], cornerHomeOrder[kCubieCount];
+    int edgeSlotOrder[kCubieCount], cornerSlotOrder[kCubieCount];
+    std::fill(std::begin(edgeHomeOrder), std::end(edgeHomeOrder), -1);
+    std::fill(std::begin(cornerHomeOrder), std::end(cornerHomeOrder), -1);
+    std::fill(std::begin(edgeSlotOrder), std::end(edgeSlotOrder), -1);
+    std::fill(std::begin(cornerSlotOrder), std::end(cornerSlotOrder), -1);
+
+    int edgeCount = 0, cornerCount = 0;
+    for (int i = 0; i < kCubieCount; ++i) {
+        const int n = visibleStickerCount(next[i].homePosition);
+        if (n == 2) edgeHomeOrder[i] = edgeSlotOrder[i] = edgeCount++;
+        else if (n == 3) cornerHomeOrder[i] = cornerSlotOrder[i] = cornerCount++;
+    }
+
+    for (int i = 0; i < kCubieCount; ++i) {
+        const int n = visibleStickerCount(next[i].homePosition);
+        if (n == 2) {
+            int slot = -1;
+            for (int j = 0; j < kCubieCount; ++j) {
+                if (next[j].homePosition == next[i].position) {
+                    slot = edgeSlotOrder[j];
+                    break;
+                }
+            }
+            if (slot >= 0) edgeSlotToHome[slot] = edgeHomeOrder[i];
+        } else if (n == 3) {
+            int slot = -1;
+            for (int j = 0; j < kCubieCount; ++j) {
+                if (next[j].homePosition == next[i].position) {
+                    slot = cornerSlotOrder[j];
+                    break;
+                }
+            }
+            if (slot >= 0) cornerSlotToHome[slot] = cornerHomeOrder[i];
+        }
+    }
+
+    const int edgeParity = permutationParity(edgeSlotToHome);
+    const int cornerParity = permutationParity(cornerSlotToHome);
+    if (edgeParity != cornerParity) {
+        if (diag) {
+            for (const CubieInfo& c : next) {
+                const int n = visibleStickerCount(c.homePosition);
+                if (n < 2) continue;
+                if (c.position != c.homePosition)
+                    highlightCubie(*diag, c);
+            }
+        }
+        return fail("Invalid permutation parity: edge and corner swaps are inconsistent.");
+    }
+
+    if (diag) {
+        diag->valid = true;
+        diag->message.clear();
+    }
+    return true;
+}
+
+} // anonymous namespace
+
+bool CubeState::applyFaceletInput(const FaceletColor facelets[6][9]) {
+    std::array<CubieInfo, kCubieCount> next = cubies_;
+    if (!reconstructFacelets(facelets, next, nullptr)) return false;
     cubies_ = next;
     return true;
+}
+
+CubeState::FaceletDiagnostic CubeState::validateFaceletInput(const FaceletColor facelets[6][9]) const {
+    FaceletDiagnostic diag;
+    std::array<CubieInfo, kCubieCount> next = cubies_;
+    reconstructFacelets(facelets, next, &diag);
+    return diag;
 }
 
 void CubeState::toFacelets(FaceletColor facelets[6][9]) const {

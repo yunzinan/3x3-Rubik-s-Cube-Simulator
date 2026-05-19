@@ -64,6 +64,8 @@ void ImGuiUI::initInputFacelets() {
             inputFacelets_[f][s] = c;
     }
     inputError_.clear();
+    for (auto& face : inputHighlights_)
+        face.fill(false);
     inputInitialized_ = true;
 }
 
@@ -142,17 +144,26 @@ void ImGuiUI::drawInputStatePanel(bool isAnimating) {
     for (int f = 0; f < 6; ++f) {
         for (int s = 0; s < 9; ++s) {
             ImVec2 pos = stickerScreenPos(f, s);
+            const bool highlighted = inputHighlights_[f][s];
             ImGui::SetCursorScreenPos(pos);
             ImGui::PushStyleColor(ImGuiCol_Button,         faceletColorToImU32(inputFacelets_[f][s]));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  faceletHoverColor(inputFacelets_[f][s]));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive,   faceletActiveColor(inputFacelets_[f][s]));
-            ImGui::PushStyleColor(ImGuiCol_Border,         IM_COL32(0, 0, 0, 120));
+            ImGui::PushStyleColor(ImGuiCol_Border,
+                                  highlighted ? IM_COL32(255, 35, 35, 255)
+                                              : IM_COL32(0, 0, 0, 120));
+            if (highlighted)
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 3.0f);
             ImGui::PushID(f * 100 + s);
             char label[8];
             std::snprintf(label, sizeof(label), "##%d%d", f, s);
-            if (ImGui::Button(label, {stickerSize, stickerSize}))
+            if (ImGui::Button(label, {stickerSize, stickerSize})) {
                 inputFacelets_[f][s] = selectedColor_;
+                inputHighlights_[f][s] = false;
+            }
             ImGui::PopID();
+            if (highlighted)
+                ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
         }
     }
@@ -170,25 +181,22 @@ void ImGuiUI::drawInputStatePanel(bool isAnimating) {
 
     ImGui::BeginDisabled(isAnimating);
     if (ImGui::Button("Apply")) {
-        // Validate.
-        int counts[6] = {};
-        for (int f = 0; f < 6; ++f)
-            for (int s = 0; s < 9; ++s)
-                ++counts[int(inputFacelets_[f][s])];
-        bool valid = true;
-        for (int i = 0; i < 6; ++i) {
-            if (counts[i] != 9) {
-                inputError_ = "Each color must appear exactly 9 times. Invalid counts.";
-                valid = false;
-                break;
-            }
-        }
-        if (valid) {
+        for (auto& face : inputHighlights_)
+            face.fill(false);
+
+        CubeState::FaceletDiagnostic diag;
+        if (onValidateStateInput)
+            diag = onValidateStateInput(inputFacelets_);
+
+        if (!diag.valid) {
+            inputError_ = diag.message.empty() ? "Invalid cube state." : diag.message;
+            inputHighlights_ = diag.highlights;
+        } else {
             if (onApplyStateInput && onApplyStateInput(inputFacelets_)) {
                 inputError_.clear();
                 showInputPanel_ = false;
             } else {
-                inputError_ = "Invalid cube state: impossible cubie color combination.";
+                inputError_ = "Could not apply cube state.";
             }
         }
     }
